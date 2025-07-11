@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ezesri',
-    version='0.1.0',
+    version='0.2.1',
     packages=find_packages(),
     description='A lightweight Python package for extracting data from Esri REST API endpoints.',
     long_description=open('README.md').read(),
@@ -16,6 +16,8 @@ setup(
         'geopandas',
         'pandas',
         'click',
+        'tqdm',
+        'fiona',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

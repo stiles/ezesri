@@ -2,6 +2,8 @@ import click
 import json
 from . import get_metadata, extract_layer, bulk_export
 import geopandas as gpd
+import warnings
+from .utils import truncate_field_names
 
 @click.group()
 def cli():
@@ -30,6 +32,15 @@ def fetch(url, out, format, bbox):
     """
     Extracts a layer and saves it to a file or prints it to the console.
     """
+    normalized_url = url.strip().rstrip('/')
+    if normalized_url.lower().endswith(('/mapserver', '/featureserver')):
+        click.echo(
+            "Error: This looks like a service URL. "
+            "To download all layers from this service, use the 'bulk-fetch' command.",
+            err=True
+        )
+        return
+
     if out and not format:
         raise click.UsageError("The --format option must be provided when specifying an output file.")
 
@@ -62,8 +73,8 @@ def fetch(url, out, format, bbox):
                 gdf.to_file(out, driver='GeoJSON')
                 click.echo(f"Successfully saved layer to {out}")
             elif format == 'shapefile':
-                # GeoPandas automatically creates a .shp file, often with other sidecar files.
-                gdf.to_file(out)
+                # Use the 'fiona' engine to avoid warnings about truncated field names.
+                gdf.to_file(out, engine='fiona')
                 click.echo(f"Successfully saved shapefile to {out}")
             elif format == 'csv':
                 # For CSV, we drop the geometry if it exists.

@@ -1,8 +1,10 @@
-import requests
 import geopandas as gpd
 import pandas as pd
 import os
 from typing import Union
+from .utils import make_request
+import requests
+from tqdm import tqdm
 
 
 def get_metadata(url: str) -> dict:
@@ -16,8 +18,7 @@ def get_metadata(url: str) -> dict:
     """
     params = {'f': 'json'}
     try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        response = make_request(url, params=params)
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"An error occurred: {e}")
@@ -59,10 +60,13 @@ def extract_layer(
         params['inSR'] = '4326'  # Assume WGS84 for bbox input
         params['spatialRel'] = 'esriSpatialRelIntersects'
 
-    r = requests.get(f"{url}/query", params=params)
-    r.raise_for_status()
-    data = r.json()
-    
+    try:
+        r = make_request(f"{url}/query", params=params)
+        data = r.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to get object IDs from {url}. Error: {e}")
+        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
+
     if 'error' in data:
         print(f"Could not get Object IDs for {url}. Server response: {data['error']}")
         return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
@@ -76,7 +80,7 @@ def extract_layer(
     all_features = []
     query_format = 'geojson' if has_geometry else 'json'
     
-    for i in range(0, len(object_ids), max_record_count):
+    for i in tqdm(range(0, len(object_ids), max_record_count), desc="Downloading features"):
         batch = object_ids[i:i + max_record_count]
         params = {
             'f': query_format,
@@ -88,10 +92,13 @@ def extract_layer(
             params['returnGeometry'] = 'true'
             params['outSR'] = '4326'
 
-        r = requests.post(f"{url}/query", data=params)
-        r.raise_for_status()
-        
-        features_json = r.json()
+        try:
+            r = make_request(f"{url}/query", method='post', data=params)
+            features_json = r.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch a batch from {url}. Error: {e}")
+            continue
+
         if 'error' in features_json:
             print(f"Error fetching batch from {url}: {features_json['error']}")
             continue
