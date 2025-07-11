@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ezesri',
-    version='0.2.1',
+    version='0.2.2',
     packages=find_packages(),
     description='A lightweight Python package for extracting data from Esri REST API endpoints.',
     long_description=open('README.md').read(),
