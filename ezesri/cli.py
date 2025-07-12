@@ -1,9 +1,10 @@
 import click
 import json
-from . import get_metadata, extract_layer, bulk_export
+from . import get_metadata, extract_layer, bulk_export, summarize_metadata
 import geopandas as gpd
 import warnings
 from .utils import truncate_field_names
+import os
 
 @click.group()
 def cli():
@@ -12,23 +13,35 @@ def cli():
 
 @cli.command()
 @click.argument('url')
-def metadata(url):
+@click.option('--json', 'as_json', is_flag=True, help="Output the raw JSON metadata.")
+def metadata(url, as_json):
     """
     Fetches and prints the metadata for a given Esri layer URL.
+
+    By default, it displays a summarized, human-readable output.
+    Use the --json flag to get the raw JSON.
     """
     click.echo("Fetching metadata...")
     data = get_metadata(url)
-    if data:
+    
+    if not data:
+        click.echo("Could not fetch metadata.", err=True)
+        return
+
+    if as_json:
         click.echo(json.dumps(data, indent=2))
     else:
-        click.echo("Could not fetch metadata.", err=True)
+        summary = summarize_metadata(data)
+        click.echo(summary)
 
 @cli.command()
 @click.argument('url')
 @click.option('--out', '-o', help="Output file path (e.g., 'data.geojson').")
 @click.option('--format', '-f', type=click.Choice(['geojson', 'shapefile', 'csv'], case_sensitive=False), help="Output format.")
 @click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
-def fetch(url, out, format, bbox):
+@click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
+@click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
+def fetch(url, out, format, bbox, geometry, spatial_rel):
     """
     Extracts a layer and saves it to a file or prints it to the console.
     """
@@ -44,6 +57,9 @@ def fetch(url, out, format, bbox):
     if out and not format:
         raise click.UsageError("The --format option must be provided when specifying an output file.")
 
+    if bbox and geometry:
+        raise click.UsageError("Cannot use both --bbox and --geometry at the same time.")
+
     bbox_tuple = None
     if bbox:
         try:
@@ -53,8 +69,21 @@ def fetch(url, out, format, bbox):
         except ValueError:
             raise click.UsageError("Bbox must be in 'xmin,ymin,xmax,ymax' format.")
 
+    geometry_filter = None
+    if geometry:
+        try:
+            # Check if it's a file path
+            if os.path.exists(geometry):
+                with open(geometry, 'r') as f:
+                    geometry_filter = json.load(f)
+            else:
+                # Assume it's a GeoJSON string
+                geometry_filter = json.loads(geometry)
+        except (json.JSONDecodeError, IOError) as e:
+            raise click.UsageError(f"Invalid geometry input. Must be a valid GeoJSON file or string. Error: {e}")
+
     click.echo(f"Fetching layer from {url}...")
-    gdf = extract_layer(url, bbox=bbox_tuple)
+    gdf = extract_layer(url, bbox=bbox_tuple, geometry=geometry_filter, spatial_rel=spatial_rel)
 
     if gdf.empty:
         click.echo("Could not extract layer or layer is empty.", err=True)

@@ -12,6 +12,7 @@ A lightweight Python package for extracting data from Esri REST API endpoints.
 - **Filtering**: Filter data by bounding box or attribute query.
 - **Bulk exports**: Download all layers from a MapServer or FeatureServer.
 - **Simple CLI**: An easy-to-use command-line interface for all features.
+- **Human-readable metadata**: Get a clean summary of layer metadata.
 
 ## Installation
 
@@ -33,7 +34,7 @@ url = "your_esri_layer_url_here"
 
 # Get layer metadata
 metadata = ezesri.get_metadata(url)
-print(metadata)
+print(ezesri.summarize_metadata(metadata))
 
 # Extract layer to a GeoDataFrame
 gdf = ezesri.extract_layer(url)
@@ -46,8 +47,15 @@ print(gdf.head())
 
 #### Fetch metadata
 
+Get a clean, human-readable summary of a layer's metadata.
+
 ```bash
 ezesri metadata <YOUR_ESRI_LAYER_URL>
+```
+
+To get the raw JSON output, use the `--json` flag:
+```bash
+ezesri metadata <YOUR_ESRI_LAYER_URL> --json
 ```
 
 #### Fetch layer data
@@ -74,12 +82,34 @@ You can also filter by a bounding box (in WGS84 coordinates):
 ezesri fetch <URL> --bbox <xmin,ymin,xmax,ymax> --format geojson --out <FILE>
 ```
 
+Or, use a more advanced spatial filter with a GeoJSON object:
+```bash
+ezesri fetch <URL> --geometry '{"type": "Polygon", ...}' --format geojson --out <FILE>
+```
+
 #### Bulk-fetch all layers from a service
 
 You can discover and export all layers from a MapServer or FeatureServer to a specified directory.
 
 ```bash
 ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY>
+```
+
+## Examples
+
+For a detailed, real-world example of using `ezesri` to acquire, process, and visualize data, see the scripts in the `examples/` directory:
+
+-   `examples/fetch_data.py`: Demonstrates how to use `ezesri` to download data from multiple Esri feature layers, merge them based on a common attribute, and save the result as a GeoJSON file.
+-   `examples/create_residential_pool_map.py`: Shows how to load the prepared data, perform analysis to identify residential properties, and create a final map visualizing the results with `matplotlib`.
+
+To run these examples, you will first need to install the required dependencies:
+```bash
+pip install geopandas matplotlib
+```
+Then, you can run the scripts directly:
+```bash
+python examples/fetch_data.py
+python examples/create_residential_pool_map.py
 ```
 
 ## Contributing

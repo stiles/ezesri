@@ -24,8 +24,51 @@ def get_metadata(url: str) -> dict:
         print(f"An error occurred: {e}")
         return {}
 
+def summarize_metadata(metadata: dict) -> str:
+    """
+    Creates a human-readable summary from a metadata dictionary.
+
+    Args:
+        metadata: The metadata dictionary from the Esri JSON response.
+
+    Returns:
+        A formatted string containing the summarized metadata.
+    """
+    summary = []
+    
+    # Basic info
+    summary.append(f"Layer Name: {metadata.get('name', 'N/A')}")
+    summary.append(f"Description: {metadata.get('description', 'N/A')}")
+    summary.append(f"Geometry Type: {metadata.get('geometryType', 'N/A')}")
+    summary.append(f"Record Count: {metadata.get('maxRecordCount', 'N/A')}")
+    
+    # Spatial reference
+    sr = metadata.get('spatialReference', {})
+    if sr:
+        summary.append(f"Spatial Reference (WKID): {sr.get('wkid', 'N/A')}")
+
+    # Extent
+    extent = metadata.get('extent')
+    if extent:
+        summary.append("Extent:")
+        summary.append(f"  XMin: {extent.get('xmin')}, YMin: {extent.get('ymin')}")
+        summary.append(f"  XMax: {extent.get('xmax')}, YMax: {extent.get('ymax')}")
+
+    # Fields
+    fields = metadata.get('fields')
+    if fields:
+        summary.append("\nFields:")
+        for field in fields:
+            summary.append(f"  - {field.get('name', 'N/A')} (Type: {field.get('type', 'N/A')}, Alias: {field.get('alias', 'N/A')})")
+            
+    return "\n".join(summary)
+
 def extract_layer(
-    url: str, where: str = '1=1', bbox: tuple = None
+    url: str,
+    where: str = '1=1',
+    bbox: tuple = None,
+    geometry: str = None,
+    spatial_rel: str = 'esriSpatialRelIntersects',
 ) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
     """
     Extracts a feature layer or table into a GeoDataFrame or DataFrame.
@@ -37,6 +80,8 @@ def extract_layer(
         url: The URL of the feature layer or table.
         where: An optional SQL-like where clause to filter features.
         bbox: An optional tuple defining a bounding box (xmin, ymin, xmax, ymax) to filter by.
+        geometry: An optional GeoJSON string or dictionary representing a geometry to filter by.
+        spatial_rel: The spatial relationship to use for filtering. Defaults to 'esriSpatialRelIntersects'.
 
     Returns:
         A GeoDataFrame or DataFrame containing the features from the layer.
@@ -54,11 +99,17 @@ def extract_layer(
         'where': where,
         'returnIdsOnly': 'true'
     }
-    if bbox and has_geometry:
+
+    if bbox is not None and has_geometry:
         params['geometry'] = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
         params['geometryType'] = 'esriGeometryEnvelope'
         params['inSR'] = '4326'  # Assume WGS84 for bbox input
         params['spatialRel'] = 'esriSpatialRelIntersects'
+    elif geometry and has_geometry:
+        params['geometry'] = geometry
+        params['geometryType'] = 'esriGeometryPolygon'  # Assumes polygon, could be expanded
+        params['inSR'] = '4326'
+        params['spatialRel'] = spatial_rel
 
     try:
         r = make_request(f"{url}/query", params=params)
