@@ -29,7 +29,8 @@ You can use `ezesri` as a library to integrate with your Python scripts.
 ```python
 import ezesri
 
-# URL for a public Esri feature layer
+# URL for a public Esri feature layer, e.g. City of Los Angeles boundaries: 
+# https://services5.arcgis.com/VAb1qw880ksyBtIL/ArcGIS/rest/services/City_Boundary_of_Los_Angeles_(new)/FeatureServer/0
 url = "your_esri_layer_url_here"
 
 # Get layer metadata
