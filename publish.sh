@@ -62,7 +62,7 @@ fi
 
 # --- 5. Run Tests ---
 echo "--- Running Tests ---"
-if ! pytest; then
+if ! python3 -m pytest; then
     echo "Error: Pytest tests failed. Please fix the tests before publishing."
     exit 1
 fi

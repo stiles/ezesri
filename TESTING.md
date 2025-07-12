@@ -17,7 +17,7 @@ pip install pytest pytest-mock pytest-click geopandas
 To run the full test suite, execute the `pytest` command from the root of the project:
 
 ```bash
-pytest
+python3 -m pytest
 ```
 
 ## When to run tests
