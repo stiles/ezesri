@@ -99,8 +99,8 @@ ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY>
 
 For a detailed, real-world example of using `ezesri` to acquire, process, and visualize data, see the scripts in the `examples/` directory:
 
--   `examples/fetch_data.py`: Demonstrates how to use `ezesri` to download data from multiple Esri feature layers, merge them based on a common attribute, and save the result as a GeoJSON file.
--   `examples/create_residential_pool_map.py`: Shows how to load the prepared data, perform analysis to identify residential properties, and create a final map visualizing the results with `matplotlib`.
+-   `examples/palm_springs_fetch.py`: Demonstrates how to use `ezesri` to download data from multiple Esri feature layers, merge them based on a common attribute, and save the result as a GeoJSON file.
+-   `examples/palm_springs_pools_map.py`: Shows how to load the prepared data, perform analysis to identify residential properties, and create a final map visualizing the results with `matplotlib`.
 
 To run these examples, you will first need to install the required dependencies:
 ```bash
@@ -108,8 +108,8 @@ pip install geopandas matplotlib
 ```
 Then, you can run the scripts directly:
 ```bash
-python examples/fetch_data.py
-python examples/create_residential_pool_map.py
+python examples/palm_springs_fetch.py
+python examples/palm_springs_pools_map.py
 ```
 
 ## Contributing
