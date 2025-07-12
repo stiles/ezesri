@@ -97,7 +97,7 @@ ezesri aims to be:
 This section lists potential features and improvements for future releases, prioritized from most to least critical.
 
 1.  **Add authentication support**: Allow users to provide an authentication token to access secured Esri services.
-2.  **Create a test suite**: Develop a suite of unit tests using `pytest` to ensure code quality and prevent regressions.
+2.  **Create a test suite (Complete)**: Develop a suite of unit tests using `pytest` to ensure code quality and prevent regressions.
 3.  **Build more documentation**: Create a full documentation site using Sphinx or MkDocs and host it on Read the Docs. Include more examples with real-world URLs. (Examples added)
-4.  **Support more output formats**: Add support for exporting to other formats, such as File Geodatabase (`.gdb`).
-5.  **Add advanced CLI options**: Improve the CLI with more convenient aliases for options. 
+4.  **Support more output formats (Complete)**: Add support for exporting to other formats, such as File Geodatabase (`.gdb`).
+5.  **Add advanced CLI options (Complete)**: Improve the CLI with more convenient aliases for options. 

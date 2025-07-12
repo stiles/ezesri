@@ -174,7 +174,7 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
     Args:
         service_url: The base URL of the Esri service.
         output_dir: The directory to save the output files to.
-        output_format: The format to save the files in ('geojson', 'shapefile', 'csv').
+        output_format: The format to save the files in ('geojson', 'shapefile', 'csv', 'gdb').
     """
     print(f"Fetching service metadata from: {service_url}")
     service_metadata = get_metadata(service_url)
@@ -184,6 +184,14 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
 
     os.makedirs(output_dir, exist_ok=True)
     
+    gdb_path = None
+    if output_format == 'gdb':
+        # Sanitize service name for the GDB filename
+        service_name = os.path.basename(service_url.rstrip('/'))
+        sanitized_name = "".join(c for c in service_name if c.isalnum() or c in (' ', '_')).rstrip()
+        gdb_path = os.path.join(output_dir, f"{sanitized_name}.gdb")
+        print(f"Output will be saved to File Geodatabase: {gdb_path}")
+
     for layer in service_metadata['layers']:
         if layer.get('type') == 'Group Layer':
             print(f"--- Skipping Group Layer: {layer.get('name', 'Unnamed')} (ID: {layer['id']}) ---")
@@ -203,22 +211,26 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
 
             is_spatial = isinstance(df, gpd.GeoDataFrame)
             
-            if not is_spatial and output_format in ['geojson', 'shapefile']:
+            if not is_spatial and output_format in ['geojson', 'shapefile', 'gdb']:
                 print(f"Cannot save non-spatial layer {layer_name} as {output_format}. Skipping.")
                 continue
-
-            file_extension = {
-                'geojson': '.geojson', 'shapefile': '.shp', 'csv': '.csv'
-            }[output_format]
             
-            output_path = os.path.join(output_dir, f"{layer_name}{file_extension}")
-            
-            print(f"Saving to {output_path}...")
-
-            if output_format == 'csv':
-                df.drop(columns='geometry', errors='ignore').to_csv(output_path, index=False)
+            if output_format == 'gdb':
+                print(f"Saving to {gdb_path}...")
+                df.to_file(gdb_path, driver='FileGDB', layer=layer_name)
             else:
-                df.to_file(output_path, driver='GeoJSON' if output_format == 'geojson' else None)
+                file_extension = {
+                    'geojson': '.geojson', 'shapefile': '.shp', 'csv': '.csv'
+                }[output_format]
+                
+                output_path = os.path.join(output_dir, f"{layer_name}{file_extension}")
+                
+                print(f"Saving to {output_path}...")
+
+                if output_format == 'csv':
+                    df.drop(columns='geometry', errors='ignore').to_csv(output_path, index=False)
+                else:
+                    df.to_file(output_path, driver='GeoJSON' if output_format == 'geojson' else None)
             
             print(f"Successfully saved {layer_name}.")
 

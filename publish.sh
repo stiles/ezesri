@@ -60,7 +60,15 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# --- 5. Prerequisite Check ---
+# --- 5. Run Tests ---
+echo "--- Running Tests ---"
+if ! pytest; then
+    echo "Error: Pytest tests failed. Please fix the tests before publishing."
+    exit 1
+fi
+echo "✅ Tests passed."
+
+# --- 6. Prerequisite Check ---
 echo "Checking for required tools..."
 command -v python3 >/dev/null 2>&1 || { echo >&2 "Error: python3 is not installed. Aborting."; exit 1; }
 python3 -m pip show build >/dev/null 2>&1 || { echo >&2 "Error: 'build' is not installed. Run 'pip install build'. Aborting."; exit 1; }
@@ -68,7 +76,7 @@ python3 -m pip show twine >/dev/null 2>&1 || { echo >&2 "Error: 'twine' is not i
 echo "Tools found."
 HAS_GH=$(command -v gh >/dev/null 2>&1 && echo "true" || echo "false")
 
-# --- 6. Clean and Build ---
+# --- 7. Clean and Build ---
 echo "Cleaning up previous builds..."
 rm -rf build dist ezesri.egg-info
 echo "Building the package..."
@@ -76,7 +84,7 @@ python3 -m build
 echo "Build complete. New files are in the dist/ directory:"
 ls -l dist
 
-# --- 7. Publish ---
+# --- 8. Publish ---
 echo
 echo "Where would you like to publish?"
 select choice in "TestPyPI" "PyPI (Official)" "Cancel"; do
@@ -110,7 +118,7 @@ select choice in "TestPyPI" "PyPI (Official)" "Cancel"; do
                 echo "✅ Successfully published to PyPI!"
                 echo "Your package is now live at: https://pypi.org/project/ezesri/$VERSION/"
                 
-                # --- 8. GitHub Release ---
+                # --- 9. GitHub Release ---
                 echo
                 read -p "Do you want to create a GitHub release for v$VERSION? (y/n) " -n 1 -r
                 echo

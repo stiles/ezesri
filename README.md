@@ -7,7 +7,7 @@ A lightweight Python package for extracting data from Esri REST API endpoints.
 
 ## Features
 
-- **Multiple export formats**: Export to GeoJSON, Shapefile, CSV, and GeoDataFrame.
+- **Multiple export formats**: Export to GeoJSON, Shapefile, CSV, File Geodatabase, and GeoDataFrame.
 - **Robust extraction**: Automatically handles Esri's pagination.
 - **Filtering**: Filter data by bounding box or attribute query.
 - **Bulk exports**: Download all layers from a MapServer or FeatureServer.
@@ -78,6 +78,11 @@ You can fetch a layer and save it to a file in various formats.
     ezesri fetch <YOUR_ESRI_LAYER_URL> --format csv --out output.csv
     ```
 
+-   **File Geodatabase**
+    ```bash
+    ezesri fetch <YOUR_ESRI_LAYER_URL> --format gdb --out output.gdb
+    ```
+
 You can also filter by a bounding box (in WGS84 coordinates):
 ```bash
 ezesri fetch <URL> --bbox <xmin,ymin,xmax,ymax> --format geojson --out <FILE>
@@ -93,8 +98,16 @@ ezesri fetch <URL> --geometry '{"type": "Polygon", ...}' --format geojson --out 
 You can discover and export all layers from a MapServer or FeatureServer to a specified directory.
 
 ```bash
-ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY>
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gdb
 ```
+
+## CLI command aliases
+
+To make the CLI easier to use, the following aliases are available for common options:
+
+- `--out`: `--output`
+- `--format`: `--fmt`
+- `--spatial-rel`: `--srs`
 
 ## Examples
 
@@ -112,6 +125,10 @@ Then, you can run the scripts directly:
 python examples/palm_springs_fetch.py
 python examples/palm_springs_pools_map.py
 ```
+
+## Testing
+
+This project uses `pytest` for unit testing. For details on how to run the test suite, please see the [testing guide](TESTING.md).
 
 ## Contributing
 

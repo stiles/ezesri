@@ -1,5 +1,6 @@
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import os
 
 def main():
@@ -33,15 +34,21 @@ def main():
         (clipped_parcels['BATH_COUNT'] > 0)
     )
 
-    print(f"Found {len(clipped_parcels)} total parcels.")
     residential_parcels = clipped_parcels[clipped_parcels['is_residential']].copy()
-    print(f"Found {len(residential_parcels)} residential parcels.")
 
-    print(clipped_parcels['ADDRESS_TYPE'].value_counts())
+    # Report on pool statistics
+    total_residential_parcels = len(residential_parcels)
+    parcels_with_pools = residential_parcels[residential_parcels['POOL'].str.upper() == 'YES']
+    count_with_pools = len(parcels_with_pools)
+    percentage_with_pools = (count_with_pools / total_residential_parcels) * 100 if total_residential_parcels > 0 else 0
+
+    print(f"Found {total_residential_parcels} residential parcels.")
+    print(f"Found {count_with_pools} residential parcels with pools.")
+    print(f"Share of residential parcels with pools: {percentage_with_pools:.2f}%")
 
     # Create a color column for plotting
-    residential_parcels['color'] = 'gray'  # Default color
-    residential_parcels.loc[residential_parcels['POOL'].str.upper() == 'YES', 'color'] = 'blue'
+    residential_parcels['color'] = '#d3d3d3'  # Light gray
+    residential_parcels.loc[residential_parcels['POOL'].str.upper() == 'YES', 'color'] = '#0077be'
 
     # Create the map
     print("Creating map...")
@@ -54,10 +61,17 @@ def main():
     boundary.plot(ax=ax, edgecolor='black', facecolor='none', linewidth=1)
     
     # Customize and save the plot
-    ax.set_title('Residential parcels with pools in Palm Springs')
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.set_title('Residential parcels with pools in Palm Springs', fontsize=20, pad=20)
+    ax.set_axis_off()
+
+    # Add legend
+    legend_patches = [
+        mpatches.Patch(color='#0077be', label='Has pool'),
+        mpatches.Patch(color='#d3d3d3', label='No pool')
+    ]
+    ax.legend(handles=legend_patches, loc='upper right', fontsize=12, title='Legend')
     
+    fig.tight_layout()
     plt.savefig(output_map_path, dpi=300)
     print(f"Map saved to {output_map_path}")
 

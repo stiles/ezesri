@@ -36,11 +36,11 @@ def metadata(url, as_json):
 
 @cli.command()
 @click.argument('url')
-@click.option('--out', '-o', help="Output file path (e.g., 'data.geojson').")
-@click.option('--format', '-f', type=click.Choice(['geojson', 'shapefile', 'csv'], case_sensitive=False), help="Output format.")
+@click.option('--out', '-o', '--output', help="Output file path (e.g., 'data.geojson').")
+@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb'], case_sensitive=False), help="Output format.")
 @click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
-@click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
+@click.option('--spatial-rel', '--srs', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
 def fetch(url, out, format, bbox, geometry, spatial_rel):
     """
     Extracts a layer and saves it to a file or prints it to the console.
@@ -95,7 +95,7 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
 
     if out:
         try:
-            if not is_spatial and format in ['geojson', 'shapefile']:
+            if not is_spatial and format in ['geojson', 'shapefile', 'gdb']:
                 raise click.UsageError(f"Cannot save non-spatial layer as {format}. Try '--format csv'.")
 
             if format == 'geojson':
@@ -110,6 +110,14 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
                 df_to_save = gdf.drop(columns='geometry', errors='ignore')
                 df_to_save.to_csv(out, index=False)
                 click.echo(f"Successfully saved CSV to {out} (geometry column was dropped).")
+            elif format == 'gdb':
+                # Assumes the output path 'out' ends with .gdb
+                if not out.lower().endswith('.gdb'):
+                    raise click.UsageError("Output for GDB format must be a path ending in .gdb")
+                # Layer name is inferred from the output file name, without extension
+                layer_name = os.path.splitext(os.path.basename(out))[0]
+                gdf.to_file(out, driver='FileGDB', layer=layer_name)
+                click.echo(f"Successfully saved layer '{layer_name}' to {out}")
         except Exception as e:
             click.echo(f"Error saving file: {e}", err=True)
     else:
@@ -119,7 +127,7 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
 @cli.command('bulk-fetch')
 @click.argument('url')
 @click.argument('output-dir')
-@click.option('--format', '-f', type=click.Choice(['geojson', 'shapefile', 'csv'], case_sensitive=False), default='geojson', help="Output format for all layers.")
+@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb'], case_sensitive=False), default='geojson', help="Output format for all layers.")
 def bulk_fetch(url, output_dir, format):
     """
     Fetches all layers from a service and saves them to a directory.

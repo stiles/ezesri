@@ -13,6 +13,9 @@ def make_request(url: str, method: str = 'get', **kwargs):
     Returns:
         The response object.
     """
+    if not isinstance(url, str):
+        raise TypeError("URL must be a string.")
+        
     retries = 3
     delay = 1  # in seconds
     
