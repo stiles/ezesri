@@ -96,8 +96,23 @@ ezesri aims to be:
 
 This section lists potential features and improvements for future releases, prioritized from most to least critical.
 
-1.  **Add authentication support**: Allow users to provide an authentication token to access secured Esri services.
 2.  **Create a test suite (Complete)**: Develop a suite of unit tests using `pytest` to ensure code quality and prevent regressions.
-3.  **Build more documentation**: Create a full documentation site using Sphinx or MkDocs and host it on Read the Docs. Include more examples with real-world URLs. (Examples added)
+3.  **Build more documentation (Complete)**: Full documentation on Read the Docs: https://ezesri.readthedocs.io/. Examples added.
 4.  **Support more output formats (Complete)**: Add support for exporting to other formats, such as File Geodatabase (`.gdb`).
 5.  **Add advanced CLI options (Complete)**: Improve the CLI with more convenient aliases for options. 
+
+### Proposed UX-focused enhancements (prioritized)
+
+Authentication for private services is intentionally out of scope.
+
+1.  **Better CLI UX**: Read URLs from a file or stdin, write outputs to stdout, add `--dry-run`.
+2.  **Streaming/NDJSON export**: Stream features to newline-delimited GeoJSON to handle very large layers with low memory use.
+3.  **Validation and report**: Emit a simple report alongside outputs (feature counts, skipped features, missing fields).
+4.  **Parallel bulk export**: Add `--workers` to fetch multiple layers concurrently.
+5.  **Output packaging**: Zip shapefiles automatically; optional `--gzip` for GeoJSON.
+6.  **Field selection helpers**: Support patterns like `--fields *,-shape_area,-shape_len` and sampling via `--top N`.
+7.  **GeoParquet/Parquet output**: Write GeoParquet for spatial layers and Parquet for non-spatial tables.
+8.  **CRS controls**: Add `--out-sr` in CLI and API with clear errors when reprojection data is missing.
+9.  **Domain decoding**: Replace coded domain values with aliases on export.
+10. **Retry/backoff options**: Make retry, backoff and rate limit settings configurable.
+11. **Caching**: Optional local cache using ETag/Last-Modified to skip unchanged layers.
