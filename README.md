@@ -1,10 +1,6 @@
 # ezesri
 
 <p align="center">
-  <strong>A lightweight Python package for extracting data from Esri REST API endpoints.</strong>
-</p>
-
-<p align="center">
   <a href="https://pypi.org/project/ezesri/">
     <img src="https://badge.fury.io/py/ezesri.svg" alt="PyPI version">
   </a>
@@ -27,21 +23,14 @@ Many tools exist for interacting with Esri services, but they often come with tr
 -   **ArcGIS API for Python**: A full-featured Esri SDK, but its heavy dependencies make it overkill for simple data extraction.
 -   **ogr2ogr (GDAL)**: Extremely powerful, but can be complex to use and is not a native Python library.
 
-`ezesri` aims to be:
--   **Lightweight**: Minimal dependencies, keeping your environment clean.
--   **Pythonic**: A simple, intuitive API that integrates seamlessly into your workflows.
--   **Flexible**: A modular API with an optional CLI for quick, one-off tasks.
--   **Robust**: Handles Esri pagination automatically so you don't have to.
--   **Modern**: Exports to common formats like GeoJSON, Shapefile, and GeoDataFrame.
-
 ## Key Features
 
--   **Multiple export formats**: Export to GeoJSON, Shapefile, CSV, File Geodatabase, and GeoDataFrame.
--   **Robust extraction**: Automatically handles Esri's pagination.
+-   **Multiple export formats**: Export to GeoJSON, Esri shapefile, CSV, geodatabase. 
+-   **Simple extraction**: Automatically handles Esri's pagination.
 -   **Filtering**: Filter data by bounding box, geometry, or attribute query.
 -   **Bulk exports**: Download all layers from a MapServer or FeatureServer.
--   **Simple CLI**: An easy-to-use command-line interface for all features.
--   **Human-readable metadata**: Get a clean summary of layer metadata.
+-   **CLI**: An easy-to-use command-line interface for all features.
+-   **Human-readable metadata**: Fetch a clean summary of a layer's metadata.
 
 ## Installation
 
