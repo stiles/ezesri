@@ -1,19 +1,5 @@
 # ezesri
 
-<p align="center">
-  <a href="https://pypi.org/project/ezesri/">
-    <img src="https://badge.fury.io/py/ezesri.svg" alt="PyPI version">
-  </a>
-  <a href="https://ezesri.readthedocs.io/en/latest/">
-    <img src="https://readthedocs.org/projects/ezesri/badge/?version=latest" alt="Documentation Status">
-  </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
-  </a>
-</p>
-
----
-
 `ezesri` is a lightweight Python package for extracting data and metadata from Esri REST API endpoints. It provides a modular API and optional CLI for exporting feature layers and metadata to common formats, with robust handling of Esri-specific pagination and filtering.
 
 ## Why ezesri?
