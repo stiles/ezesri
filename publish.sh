@@ -86,22 +86,9 @@ ls -l dist
 
 # --- 8. Publish ---
 
-# Function to deploy documentation
-deploy_docs() {
-    echo
-    read -p "Do you want to deploy the documentation to GitHub Pages? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "Deploying documentation..."
-        python3 -m pip show mkdocs >/dev/null 2>&1 || { echo >&2 "Error: 'mkdocs' is not installed. Run 'pip install -e .[docs]'. Aborting."; exit 1; }
-        mkdocs gh-deploy
-        echo "✅ Documentation deployed successfully."
-    fi
-}
-
 echo
 echo "What would you like to do?"
-select choice in "Publish to TestPyPI" "Publish to PyPI (Official)" "Deploy Documentation Only" "Cancel"; do
+select choice in "Publish to TestPyPI" "Publish to PyPI (Official)" "Cancel"; do
     case $choice in
         "Publish to TestPyPI" )
             echo "Preparing to upload to TestPyPI..."
@@ -161,15 +148,13 @@ select choice in "Publish to TestPyPI" "Publish to PyPI (Official)" "Deploy Docu
                     echo "✅ GitHub release created successfully."
                 fi
 
-                # --- 10. Deploy Documentation ---
-                deploy_docs
+                # --- 10. Documentation ---
+                echo
+                echo "Documentation builds on Read the Docs after pushes to main and new tags."
+                echo "If needed, trigger a build at: https://readthedocs.org/projects/ezesri/builds/"
             else
                 echo "Publishing to official PyPI cancelled."
             fi
-            break
-            ;;
-        "Deploy Documentation Only" )
-            deploy_docs
             break
             ;;
         "Cancel" )
@@ -177,7 +162,7 @@ select choice in "Publish to TestPyPI" "Publish to PyPI (Official)" "Deploy Docu
             break
             ;;
         * )
-            echo "Invalid option. Please choose 1, 2, 3, or 4."
+            echo "Invalid option. Please choose 1, 2, or 3."
             ;;
     esac
 done

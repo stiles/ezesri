@@ -8,6 +8,9 @@
   <a href="https://pypi.org/project/ezesri/">
     <img src="https://badge.fury.io/py/ezesri.svg" alt="PyPI version">
   </a>
+  <a href="https://ezesri.readthedocs.io/en/latest/">
+    <img src="https://readthedocs.org/projects/ezesri/badge/?version=latest" alt="Documentation Status">
+  </a>
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
   </a>
@@ -69,6 +72,10 @@ print(gdf.head())
 ```
 
 ## Usage
+## Documentation
+
+You can read the full documentation on Read the Docs: https://ezesri.readthedocs.io/
+
 
 ### Python Library
 
