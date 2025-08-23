@@ -1,0 +1,13 @@
+site_name: ezesri
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - User Guide:
+    - Installation: installation.md
+    - Usage: usage.md
+  - API Reference: api.md
+  - Developer Guide:
+    - Getting Started: developer.md
+    - Testing: testing.md
+  - License: license.md

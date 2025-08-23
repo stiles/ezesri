@@ -85,11 +85,25 @@ echo "Build complete. New files are in the dist/ directory:"
 ls -l dist
 
 # --- 8. Publish ---
+
+# Function to deploy documentation
+deploy_docs() {
+    echo
+    read -p "Do you want to deploy the documentation to GitHub Pages? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Deploying documentation..."
+        python3 -m pip show mkdocs >/dev/null 2>&1 || { echo >&2 "Error: 'mkdocs' is not installed. Run 'pip install -e .[docs]'. Aborting."; exit 1; }
+        mkdocs gh-deploy
+        echo "✅ Documentation deployed successfully."
+    fi
+}
+
 echo
-echo "Where would you like to publish?"
-select choice in "TestPyPI" "PyPI (Official)" "Cancel"; do
+echo "What would you like to do?"
+select choice in "Publish to TestPyPI" "Publish to PyPI (Official)" "Deploy Documentation Only" "Cancel"; do
     case $choice in
-        "TestPyPI" )
+        "Publish to TestPyPI" )
             echo "Preparing to upload to TestPyPI..."
             if [ -z "$PYPI_TEST" ]; then
                 echo "Error: PYPI_TEST environment variable is not set."
@@ -103,7 +117,7 @@ select choice in "TestPyPI" "PyPI (Official)" "Cancel"; do
             echo "You can install it using: python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple ezesri==$VERSION"
             break
             ;;
-        "PyPI (Official)" )
+        "Publish to PyPI (Official)" )
             read -p "⚠️  Are you sure you want to publish to the OFFICIAL PyPI? This is permanent. (y/n) " -n 1 -r
             echo
             if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -146,9 +160,16 @@ select choice in "TestPyPI" "PyPI (Official)" "Cancel"; do
                     gh release create "$TAG" dist/* --title "$TAG" --notes "$NOTES"
                     echo "✅ GitHub release created successfully."
                 fi
+
+                # --- 10. Deploy Documentation ---
+                deploy_docs
             else
                 echo "Publishing to official PyPI cancelled."
             fi
+            break
+            ;;
+        "Deploy Documentation Only" )
+            deploy_docs
             break
             ;;
         "Cancel" )
@@ -156,7 +177,7 @@ select choice in "TestPyPI" "PyPI (Official)" "Cancel"; do
             break
             ;;
         * )
-            echo "Invalid option. Please choose 1, 2, or 3."
+            echo "Invalid option. Please choose 1, 2, 3, or 4."
             ;;
     esac
 done

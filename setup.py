@@ -19,6 +19,12 @@ setup(
         'tqdm',
         'fiona',
     ],
+    extras_require={
+        'docs': [
+            'mkdocs',
+            'mkdocs-material',
+        ]
+    },
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
