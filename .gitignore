@@ -17,6 +17,8 @@ __pycache__/
 *.cpg
 *.dbf
 
+.PLANNING.md
+
 # Distribution / packaging
 .Python
 build/
@@ -130,3 +132,6 @@ dmypy.json
 # Publishing docs
 PUBLISH.md 
 medium_post.md 
+ 
+# macOS
+.DS_Store

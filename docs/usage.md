@@ -50,19 +50,19 @@ ezesri metadata <YOUR_ESRI_LAYER_URL> --json
 You can fetch a layer and save it to a file in various formats.
 
 -   **GeoJSON**
-    ```bash
-    ezesri fetch <URL> --format geojson --out output.geojson
-    ```
+```bash
+ezesri fetch <URL> --format geojson --out output.geojson
+```
 
 -   **Shapefile**
-    ```bash
-    ezesri fetch <URL> --format shapefile --out output.shp
-    ```
+```bash
+ezesri fetch <URL> --format shapefile --out output.shp
+```
 
 -   **File Geodatabase**
-    ```bash
-    ezesri fetch <URL> --format gdb --out output.gdb
-    ```
+```bash
+ezesri fetch <URL> --format gdb --out output.gdb
+```
 
 You can also filter by a bounding box (in WGS84 coordinates) or an attribute query:
 ```bash
@@ -75,6 +75,4 @@ ezesri fetch <URL> --where "STATUS = 'ACTIVE'" --out <FILE>
 You can discover and export all layers from a MapServer or FeatureServer to a specified directory.
 ```bash
 ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gdb
-```
-
 ```
