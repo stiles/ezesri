@@ -3,7 +3,7 @@ import json
 from . import get_metadata, extract_layer, bulk_export, summarize_metadata
 import geopandas as gpd
 import warnings
-from .utils import truncate_field_names
+from .utils import truncate_field_names, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types
 import os
 
 @click.group()
@@ -37,7 +37,7 @@ def metadata(url, as_json):
 @cli.command()
 @click.argument('url')
 @click.option('--out', '-o', '--output', help="Output file path (e.g., 'data.geojson').")
-@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb'], case_sensitive=False), help="Output format.")
+@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg'], case_sensitive=False), help="Output format.")
 @click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
 @click.option('--spatial-rel', '--srs', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
@@ -95,7 +95,7 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
 
     if out:
         try:
-            if not is_spatial and format in ['geojson', 'shapefile', 'gdb']:
+            if not is_spatial and format in ['geojson', 'shapefile', 'gdb', 'gpkg']:
                 raise click.UsageError(f"Cannot save non-spatial layer as {format}. Try '--format csv'.")
 
             if format == 'geojson':
@@ -110,13 +110,36 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
                 df_to_save = gdf.drop(columns='geometry', errors='ignore')
                 df_to_save.to_csv(out, index=False)
                 click.echo(f"Successfully saved CSV to {out} (geometry column was dropped).")
+            elif format == 'gpkg':
+                if not out.lower().endswith('.gpkg'):
+                    raise click.UsageError("Output for GPKG format must be a path ending in .gpkg")
+                layer_name = os.path.splitext(os.path.basename(out))[0]
+                cleaned_gdf, dropped = drop_empty_geometries(gdf)
+                if dropped:
+                    click.echo(f"Warning: Dropped {dropped} features with null/empty geometry before writing.")
+                cleaned_gdf.to_file(out, driver='GPKG', layer=layer_name)
+                click.echo(f"Successfully saved layer '{layer_name}' to {out}")
             elif format == 'gdb':
                 # Assumes the output path 'out' ends with .gdb
                 if not out.lower().endswith('.gdb'):
                     raise click.UsageError("Output for GDB format must be a path ending in .gdb")
+                supported, msg = has_filegdb_write_support()
+                if not supported:
+                    raise click.UsageError(msg + " Tip: Use '--format gpkg' with a .gpkg output path for a similar container.")
+                # Clean null/empty geometries to avoid common driver errors
+                cleaned_gdf, dropped = drop_empty_geometries(gdf)
+                if dropped:
+                    click.echo(f"Warning: Dropped {dropped} features with null/empty geometry before writing.")
+                # Enforce consistent geometry types (FileGDB often fails on mixed types)
+                geom_types = unique_geometry_types(cleaned_gdf)
+                if len(geom_types) > 1:
+                    raise click.UsageError(
+                        f"Mixed geometry types detected: {geom_types}. FileGDB writes generally require a single "
+                        "geometry type per layer. Consider filtering or converting geometries, or use GeoPackage/GeoJSON."
+                    )
                 # Layer name is inferred from the output file name, without extension
                 layer_name = os.path.splitext(os.path.basename(out))[0]
-                gdf.to_file(out, driver='FileGDB', layer=layer_name)
+                cleaned_gdf.to_file(out, driver='FileGDB', layer=layer_name)
                 click.echo(f"Successfully saved layer '{layer_name}' to {out}")
         except Exception as e:
             click.echo(f"Error saving file: {e}", err=True)
@@ -127,7 +150,7 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
 @cli.command('bulk-fetch')
 @click.argument('url')
 @click.argument('output-dir')
-@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb'], case_sensitive=False), default='geojson', help="Output format for all layers.")
+@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg'], case_sensitive=False), default='geojson', help="Output format for all layers.")
 def bulk_fetch(url, output_dir, format):
     """
     Fetches all layers from a service and saves them to a directory.

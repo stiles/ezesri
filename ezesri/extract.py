@@ -2,7 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import os
 from typing import Union
-from .utils import make_request
+from .utils import make_request, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types
 import requests
 from tqdm import tqdm
 
@@ -174,7 +174,7 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
     Args:
         service_url: The base URL of the Esri service.
         output_dir: The directory to save the output files to.
-        output_format: The format to save the files in ('geojson', 'shapefile', 'csv', 'gdb').
+        output_format: The format to save the files in ('geojson', 'shapefile', 'csv', 'gdb', 'gpkg').
     """
     print(f"Fetching service metadata from: {service_url}")
     service_metadata = get_metadata(service_url)
@@ -185,12 +185,23 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
     os.makedirs(output_dir, exist_ok=True)
     
     gdb_path = None
+    gpkg_path = None
     if output_format == 'gdb':
+        supported, msg = has_filegdb_write_support()
+        if not supported:
+            print(msg)
+            print(f"Tip: Try: ezesri bulk-fetch {service_url} {output_dir} --format gpkg")
+            return
         # Sanitize service name for the GDB filename
         service_name = os.path.basename(service_url.rstrip('/'))
         sanitized_name = "".join(c for c in service_name if c.isalnum() or c in (' ', '_')).rstrip()
         gdb_path = os.path.join(output_dir, f"{sanitized_name}.gdb")
         print(f"Output will be saved to File Geodatabase: {gdb_path}")
+    elif output_format == 'gpkg':
+        service_name = os.path.basename(service_url.rstrip('/'))
+        sanitized_name = "".join(c for c in service_name if c.isalnum() or c in (' ', '_')).rstrip()
+        gpkg_path = os.path.join(output_dir, f"{sanitized_name}.gpkg")
+        print(f"Output will be saved to GeoPackage: {gpkg_path}")
 
     for layer in service_metadata['layers']:
         if layer.get('type') == 'Group Layer':
@@ -211,13 +222,30 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
 
             is_spatial = isinstance(df, gpd.GeoDataFrame)
             
-            if not is_spatial and output_format in ['geojson', 'shapefile', 'gdb']:
+            if not is_spatial and output_format in ['geojson', 'shapefile', 'gdb', 'gpkg']:
                 print(f"Cannot save non-spatial layer {layer_name} as {output_format}. Skipping.")
                 continue
             
             if output_format == 'gdb':
                 print(f"Saving to {gdb_path}...")
-                df.to_file(gdb_path, driver='FileGDB', layer=layer_name)
+                # Clean and validate geometries to avoid common FileGDB write errors
+                df_clean, dropped = drop_empty_geometries(df)
+                if dropped:
+                    print(f"Warning: Dropped {dropped} features with null/empty geometry for layer {layer_name}.")
+                geom_types = unique_geometry_types(df_clean)
+                if len(geom_types) > 1:
+                    print(
+                        f"Skipping layer {layer_name}: mixed geometry types detected {geom_types}. "
+                        "GDB writes generally require a single geometry type per layer."
+                    )
+                    continue
+                df_clean.to_file(gdb_path, driver='FileGDB', layer=layer_name)
+            elif output_format == 'gpkg':
+                print(f"Saving to {gpkg_path}...")
+                df_clean, dropped = drop_empty_geometries(df)
+                if dropped:
+                    print(f"Warning: Dropped {dropped} features with null/empty geometry for layer {layer_name}.")
+                df_clean.to_file(gpkg_path, driver='GPKG', layer=layer_name)
             else:
                 file_extension = {
                     'geojson': '.geojson', 'shapefile': '.shp', 'csv': '.csv'

@@ -59,6 +59,11 @@ ezesri fetch <URL> --format geojson --out output.geojson
 ezesri fetch <URL> --format shapefile --out output.shp
 ```
 
+-   **GeoPackage**
+```bash
+ezesri fetch <URL> --format gpkg --out output.gpkg
+```
+
 -   **File Geodatabase**
 ```bash
 ezesri fetch <URL> --format gdb --out output.gdb
@@ -68,6 +73,12 @@ You can also filter by a bounding box (in WGS84 coordinates) or an attribute que
 ```bash
 ezesri fetch <URL> --bbox <xmin,ymin,xmax,ymax> --out <FILE>
 ezesri fetch <URL> --where "STATUS = 'ACTIVE'" --out <FILE>
+```
+
+### Bulk export example
+
+```bash
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gpkg
 ```
 
 ### Bulk-fetch all layers from a service

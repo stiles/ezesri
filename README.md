@@ -11,7 +11,7 @@ Many tools exist for interacting with Esri services, but they often come with tr
 
 ## Key Features
 
--   **Multiple export formats**: Export to GeoJSON, Esri shapefile, CSV, geodatabase. 
+-   **Multiple export formats**: Export to GeoJSON, Esri shapefile, GeoPackage, CSV, geodatabase. 
 -   **Simple extraction**: Automatically handles Esri's pagination.
 -   **Filtering**: Filter data by bounding box, geometry, or attribute query.
 -   **Bulk exports**: Download all layers from a MapServer or FeatureServer.
@@ -91,6 +91,11 @@ You can fetch a layer and save it to a file in various formats.
     ezesri fetch <URL> --format shapefile --out output.shp
     ```
 
+-   **GeoPackage**
+    ```bash
+    ezesri fetch <URL> --format gpkg --out output.gpkg
+    ```
+
 -   **File Geodatabase**
     ```bash
     ezesri fetch <URL> --format gdb --out output.gdb
@@ -107,6 +112,10 @@ ezesri fetch <URL> --where "STATUS = 'ACTIVE'" --out <FILE>
 You can discover and export all layers from a MapServer or FeatureServer to a specified directory.
 ```bash
 ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gdb
+```
+Or use GeoPackage as an open, broadly supported alternative:
+```bash
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gpkg
 ```
 
 ## Examples
