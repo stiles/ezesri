@@ -2,9 +2,11 @@ import geopandas as gpd
 import pandas as pd
 import os
 from typing import Union
-from .utils import make_request, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types
+from .utils import make_request, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types, write_ndjson, set_rate_limit
 import requests
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 
 def get_metadata(url: str) -> dict:
@@ -167,15 +169,20 @@ def extract_layer(
         rows = [f['attributes'] for f in all_features]
         return pd.DataFrame(rows)
 
-def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson'):
+def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson', workers: int = 1, rate: float = 0.0):
     """
     Discovers and exports all layers from a MapServer or FeatureServer.
 
     Args:
         service_url: The base URL of the Esri service.
         output_dir: The directory to save the output files to.
-        output_format: The format to save the files in ('geojson', 'shapefile', 'csv', 'gdb', 'gpkg').
+        output_format: The format to save the files in ('geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson').
+        workers: Number of parallel workers to use.
+        rate: Global max requests per second across all workers (0 to disable).
     """
+    if rate and rate > 0:
+        set_rate_limit(rate)
+
     print(f"Fetching service metadata from: {service_url}")
     service_metadata = get_metadata(service_url)
     if not service_metadata or 'layers' not in service_metadata:
@@ -203,32 +210,33 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
         gpkg_path = os.path.join(output_dir, f"{sanitized_name}.gpkg")
         print(f"Output will be saved to GeoPackage: {gpkg_path}")
 
-    for layer in service_metadata['layers']:
+    # Locks for container formats to prevent concurrent writes to the same file
+    container_write_lock = threading.Lock()
+
+    def process_layer(layer):
         if layer.get('type') == 'Group Layer':
             print(f"--- Skipping Group Layer: {layer.get('name', 'Unnamed')} (ID: {layer['id']}) ---")
-            continue
+            return False
 
         layer_id = layer['id']
         layer_name = layer.get('name', f"layer_{layer_id}").replace(" ", "_").replace("/", "-")
         layer_url = f"{service_url}/{layer_id}"
-        
+
         print(f"--- Processing layer: {layer_name} (ID: {layer_id}) ---")
-        
         try:
             df = extract_layer(layer_url)
             if df.empty:
                 print(f"Layer is empty or could not be extracted. Skipping.")
-                continue
+                return False
 
             is_spatial = isinstance(df, gpd.GeoDataFrame)
-            
-            if not is_spatial and output_format in ['geojson', 'shapefile', 'gdb', 'gpkg']:
+
+            if not is_spatial and output_format in ['geojson', 'shapefile', 'gdb', 'gpkg', 'geoparquet']:
                 print(f"Cannot save non-spatial layer {layer_name} as {output_format}. Skipping.")
-                continue
-            
+                return False
+
             if output_format == 'gdb':
                 print(f"Saving to {gdb_path}...")
-                # Clean and validate geometries to avoid common FileGDB write errors
                 df_clean, dropped = drop_empty_geometries(df)
                 if dropped:
                     print(f"Warning: Dropped {dropped} features with null/empty geometry for layer {layer_name}.")
@@ -238,29 +246,56 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
                         f"Skipping layer {layer_name}: mixed geometry types detected {geom_types}. "
                         "GDB writes generally require a single geometry type per layer."
                     )
-                    continue
-                df_clean.to_file(gdb_path, driver='FileGDB', layer=layer_name)
+                    return False
+                with container_write_lock:
+                    df_clean.to_file(gdb_path, driver='FileGDB', layer=layer_name)
             elif output_format == 'gpkg':
                 print(f"Saving to {gpkg_path}...")
                 df_clean, dropped = drop_empty_geometries(df)
                 if dropped:
                     print(f"Warning: Dropped {dropped} features with null/empty geometry for layer {layer_name}.")
-                df_clean.to_file(gpkg_path, driver='GPKG', layer=layer_name)
+                with container_write_lock:
+                    df_clean.to_file(gpkg_path, driver='GPKG', layer=layer_name)
+            elif output_format in ['geoparquet', 'parquet', 'ndjson']:
+                ext = '.parquet' if output_format in ['geoparquet', 'parquet'] else '.ndjson'
+                output_path = os.path.join(output_dir, f"{layer_name}{ext}")
+                print(f"Saving to {output_path}...")
+                if output_format == 'parquet':
+                    df_to_save = df.drop(columns='geometry', errors='ignore')
+                    df_to_save.to_parquet(output_path)
+                elif output_format == 'geoparquet':
+                    df_clean, dropped = drop_empty_geometries(df)
+                    if dropped:
+                        print(f"Warning: Dropped {dropped} features with null/empty geometry for layer {layer_name}.")
+                    df_clean.to_parquet(output_path)
+                else:  # ndjson
+                    df_clean, dropped = (drop_empty_geometries(df) if is_spatial else (df, 0))
+                    if dropped:
+                        print(f"Warning: Dropped {dropped} features with null/empty geometry for layer {layer_name}.")
+                    write_ndjson(df_clean, output_path)
             else:
                 file_extension = {
                     'geojson': '.geojson', 'shapefile': '.shp', 'csv': '.csv'
                 }[output_format]
-                
                 output_path = os.path.join(output_dir, f"{layer_name}{file_extension}")
-                
                 print(f"Saving to {output_path}...")
-
                 if output_format == 'csv':
                     df.drop(columns='geometry', errors='ignore').to_csv(output_path, index=False)
                 else:
                     df.to_file(output_path, driver='GeoJSON' if output_format == 'geojson' else None)
-            
-            print(f"Successfully saved {layer_name}.")
 
+            print(f"Successfully saved {layer_name}.")
+            return True
         except Exception as e:
-            print(f"Failed to process layer {layer_name} (ID: {layer_id}). Error: {e}") 
+            print(f"Failed to process layer {layer_name} (ID: {layer_id}). Error: {e}")
+            return False
+
+    layers = service_metadata['layers']
+    if workers <= 1:
+        for layer in layers:
+            process_layer(layer)
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(process_layer, layer) for layer in layers]
+            for _ in as_completed(futures):
+                pass

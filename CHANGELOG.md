@@ -5,10 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.1] - 2025-11-15
+## [0.3.2] - 2025-11-15
 
 ### Added
 - Added support for exporting to GeoPackage (`.gpkg`) in CLI and bulk export.
+- Added support for GeoParquet (`--format geoparquet`), Parquet (`--format parquet`) and streaming NDJSON (`--format ndjson`).
+- Added parallel bulk export with `--workers` and global request rate limiting with `--rate`.
+
+## [0.3.1] - 2025-11-15
 
 ### Changed
 - Improved FileGDB driver detection and error guidance. When FileGDB write support is unavailable, the CLI now suggests a concrete `--format gpkg` alternative.

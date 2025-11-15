@@ -3,7 +3,7 @@ import json
 from . import get_metadata, extract_layer, bulk_export, summarize_metadata
 import geopandas as gpd
 import warnings
-from .utils import truncate_field_names, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types
+from .utils import truncate_field_names, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types, write_ndjson
 import os
 
 @click.group()
@@ -37,7 +37,7 @@ def metadata(url, as_json):
 @cli.command()
 @click.argument('url')
 @click.option('--out', '-o', '--output', help="Output file path (e.g., 'data.geojson').")
-@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg'], case_sensitive=False), help="Output format.")
+@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson'], case_sensitive=False), help="Output format.")
 @click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
 @click.option('--spatial-rel', '--srs', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
@@ -93,9 +93,9 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
     if not is_spatial:
         click.echo("Note: This layer is non-spatial and contains no geometry.")
 
-    if out:
+    if out or format in ['ndjson']:
         try:
-            if not is_spatial and format in ['geojson', 'shapefile', 'gdb', 'gpkg']:
+            if not is_spatial and format in ['geojson', 'shapefile', 'gdb', 'gpkg', 'geoparquet']:
                 raise click.UsageError(f"Cannot save non-spatial layer as {format}. Try '--format csv'.")
 
             if format == 'geojson':
@@ -110,6 +110,34 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
                 df_to_save = gdf.drop(columns='geometry', errors='ignore')
                 df_to_save.to_csv(out, index=False)
                 click.echo(f"Successfully saved CSV to {out} (geometry column was dropped).")
+            elif format == 'parquet':
+                # Write non-spatial parquet (drop geometry if present)
+                df_to_save = gdf.drop(columns='geometry', errors='ignore')
+                try:
+                    df_to_save.to_parquet(out)
+                except Exception as e:
+                    raise click.UsageError(f"Writing Parquet requires pyarrow or fastparquet. Error: {e}")
+                click.echo(f"Successfully saved Parquet to {out}")
+            elif format == 'geoparquet':
+                if not is_spatial:
+                    raise click.UsageError("GeoParquet requires spatial data. Use '--format parquet' for tables.")
+                cleaned_gdf, dropped = drop_empty_geometries(gdf)
+                if dropped:
+                    click.echo(f"Warning: Dropped {dropped} features with null/empty geometry before writing.")
+                try:
+                    cleaned_gdf.to_parquet(out)
+                except Exception as e:
+                    raise click.UsageError(f"Writing GeoParquet requires geopandas with pyarrow. Error: {e}")
+                click.echo(f"Successfully saved GeoParquet to {out}")
+            elif format == 'ndjson':
+                # Allow stdout when out is not provided or '-'
+                target = out or "-"
+                cleaned_df, dropped = (drop_empty_geometries(gdf) if is_spatial else (gdf, 0))
+                if dropped:
+                    click.echo(f"Warning: Dropped {dropped} features with null/empty geometry before writing.")
+                write_ndjson(cleaned_df, target)
+                if target != "-":
+                    click.echo(f"Successfully saved NDJSON to {target}")
             elif format == 'gpkg':
                 if not out.lower().endswith('.gpkg'):
                     raise click.UsageError("Output for GPKG format must be a path ending in .gpkg")
@@ -150,11 +178,17 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
 @cli.command('bulk-fetch')
 @click.argument('url')
 @click.argument('output-dir')
-@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg'], case_sensitive=False), default='geojson', help="Output format for all layers.")
-def bulk_fetch(url, output_dir, format):
+@click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson'], case_sensitive=False), default='geojson', help="Output format for all layers.")
+@click.option('--workers', '-w', type=int, default=1, help="Number of parallel workers to export layers.")
+@click.option('--rate', type=float, default=0.0, help="Global max requests per second (0 to disable).")
+def bulk_fetch(url, output_dir, format, workers, rate):
     """
     Fetches all layers from a service and saves them to a directory.
     """
     click.echo(f"Starting bulk export from {url} to {output_dir}...")
-    bulk_export(url, output_dir, output_format=format)
+    if workers > 1:
+        click.echo(f"Using {workers} workers...")
+    if rate and rate > 0:
+        click.echo(f"Applying global rate limit: {rate} req/s")
+    bulk_export(url, output_dir, output_format=format, workers=workers, rate=rate)
     click.echo("Bulk export complete.") 

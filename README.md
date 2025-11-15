@@ -9,9 +9,10 @@ Many tools exist for interacting with Esri services, but they often come with tr
 -   **ArcGIS API for Python**: A full-featured Esri SDK, but its heavy dependencies make it overkill for simple data extraction.
 -   **ogr2ogr (GDAL)**: Extremely powerful, but can be complex to use and is not a native Python library.
 
-## Key Features
+## Key features
 
 -   **Multiple export formats**: Export to GeoJSON, Esri shapefile, GeoPackage, CSV, geodatabase. 
+    - Advanced: GeoParquet (spatial), Parquet (tabular), NDJSON (streaming)
 -   **Simple extraction**: Automatically handles Esri's pagination.
 -   **Filtering**: Filter data by bounding box, geometry, or attribute query.
 -   **Bulk exports**: Download all layers from a MapServer or FeatureServer.
@@ -52,7 +53,7 @@ print(gdf.head())
 You can read the full documentation on Read the Docs: https://ezesri.readthedocs.io/
 
 
-### Python Library
+### Python library
 
 `ezesri` is designed to be used as a library for integration with your Python scripts.
 
@@ -61,7 +62,7 @@ You can read the full documentation on Read the Docs: https://ezesri.readthedocs
 -   **`extract_layer(url, where, bbox, geometry, out_sr)`**: Extracts a layer to a GeoDataFrame, with optional filters.
 -   **`bulk_fetch(service_url, output_dir, file_format)`**: Downloads all layers from a MapServer or FeatureServer.
 
-### Command-Line Interface (CLI)
+### Command-line interface (CLI)
 
 `ezesri` also provides a command-line tool for quick data extraction.
 
@@ -100,6 +101,24 @@ You can fetch a layer and save it to a file in various formats.
     ```bash
     ezesri fetch <URL> --format gdb --out output.gdb
     ```
+    
+-   **GeoParquet (spatial)**
+    ```bash
+    ezesri fetch <URL> --format geoparquet --out output.parquet
+    ```
+    
+-   **Parquet (tabular)**
+    ```bash
+    ezesri fetch <URL> --format parquet --out output.parquet
+    ```
+    
+-   **NDJSON (streaming)**
+    ```bash
+    # to stdout
+    ezesri fetch <URL> --format ndjson
+    # to file
+    ezesri fetch <URL> --format ndjson --out output.ndjson
+    ```
 
 You can also filter by a bounding box (in WGS84 coordinates) or an attribute query:
 ```bash
@@ -116,6 +135,21 @@ ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gdb
 Or use GeoPackage as an open, broadly supported alternative:
 ```bash
 ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gpkg
+```
+
+You can also write per-layer files in these formats:
+```bash
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format geoparquet
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format parquet
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format ndjson
+```
+
+Speed and politeness options:
+```bash
+# use 4 parallel workers
+ezesri bulk-fetch <SERVICE_URL> <OUT_DIR> --format geoparquet --workers 4
+# apply a global rate limit of 2 requests/second across all workers
+ezesri bulk-fetch <SERVICE_URL> <OUT_DIR> --format geoparquet --workers 4 --rate 2
 ```
 
 ## Examples

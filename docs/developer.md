@@ -1,4 +1,4 @@
-# Developer Guide
+# Developer guide
 
 This guide provides instructions for setting up a development environment, running tests, and contributing to `ezesri`.
 

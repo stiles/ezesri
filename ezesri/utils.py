@@ -1,11 +1,18 @@
 import time
 import requests
-from typing import Tuple, List
+from typing import Tuple, List, Optional
+import json
+import threading
 
 try:
     import fiona
 except Exception:
     fiona = None
+
+try:
+    from shapely.geometry import mapping as shapely_mapping
+except Exception:
+    shapely_mapping = None
 
 def make_request(url: str, method: str = 'get', **kwargs):
     """
@@ -32,6 +39,9 @@ def make_request(url: str, method: str = 'get', **kwargs):
 
     for i in range(retries):
         try:
+            # Optional global rate limiter
+            if _rate_limiter is not None:
+                _rate_limiter.acquire()
             if method.lower() == 'get':
                 response = requests.get(url, **kwargs)
             elif method.lower() == 'post':
@@ -108,6 +118,40 @@ def has_filegdb_write_support() -> Tuple[bool, str]:
         "Try a different output format (GeoJSON, Shapefile, GeoPackage) or install GDAL with FileGDB support."
     )
 
+class _SimpleRateLimiter:
+    """
+    A simple thread-safe rate limiter that spaces requests at ~1/rate seconds.
+    Not bursty; each acquire waits until the next allowed time.
+    """
+    def __init__(self, max_per_second: float):
+        if max_per_second <= 0:
+            raise ValueError("max_per_second must be > 0")
+        self.interval = 1.0 / float(max_per_second)
+        self._lock = threading.Lock()
+        self._next_allowed = time.monotonic()
+
+    def acquire(self):
+        with self._lock:
+            now = time.monotonic()
+            if now < self._next_allowed:
+                sleep_for = self._next_allowed - now
+                time.sleep(sleep_for)
+                now = time.monotonic()
+            self._next_allowed = now + self.interval
+
+_rate_limiter: Optional[_SimpleRateLimiter] = None
+
+def set_rate_limit(max_per_second: Optional[float]):
+    """
+    Set a global, process-wide rate limit for outbound HTTP requests.
+    Pass None or 0 to disable.
+    """
+    global _rate_limiter
+    if not max_per_second:
+        _rate_limiter = None
+    else:
+        _rate_limiter = _SimpleRateLimiter(max_per_second)
+
 def drop_empty_geometries(gdf):
     """
     Drops rows with null or empty geometries. Returns (clean_gdf, dropped_count).
@@ -142,3 +186,36 @@ def unique_geometry_types(gdf) -> List[str]:
     if len(valid) == 0:
         return []
     return list(valid.geometry.geom_type.unique())
+
+def write_ndjson(df, output_path: str):
+    """
+    Writes a DataFrame/GeoDataFrame to newline-delimited JSON (GeoJSON Features when geometry exists).
+    If output_path is '-' writes to stdout.
+    """
+    is_spatial = hasattr(df, "geometry")
+    use_stdout = (not output_path) or (output_path == "-")
+
+    if is_spatial and shapely_mapping is None:
+        raise RuntimeError("shapely is required for NDJSON export of spatial layers.")
+
+    def iter_features():
+        if is_spatial:
+            for _, row in df.iterrows():
+                props = row.drop(labels=["geometry"], errors="ignore").to_dict()
+                geom = None
+                if "geometry" in df.columns and row.geometry is not None and not row.geometry.is_empty:
+                    geom = shapely_mapping(row.geometry)
+                yield {"type": "Feature", "properties": props, "geometry": geom}
+        else:
+            for _, row in df.iterrows():
+                yield row.to_dict()
+
+    if use_stdout:
+        for obj in iter_features():
+            print(json.dumps(obj, ensure_ascii=False))
+        return
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        for obj in iter_features():
+            f.write(json.dumps(obj, ensure_ascii=False))
+            f.write("\n")

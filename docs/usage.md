@@ -1,6 +1,6 @@
 # Usage
 
-## Python Library
+## Python library
 
 `ezesri` is designed to be used as a library for integration with your Python scripts.
 
@@ -29,7 +29,7 @@ print(f"Successfully extracted {len(gdf)} features.")
 print(gdf.head())
 ```
 
-## Command-Line Interface (CLI)
+## Command-line interface (CLI)
 
 `ezesri` also provides a command-line tool for quick data extraction.
 
@@ -69,6 +69,23 @@ ezesri fetch <URL> --format gpkg --out output.gpkg
 ezesri fetch <URL> --format gdb --out output.gdb
 ```
 
+-   **GeoParquet (spatial)**
+```bash
+ezesri fetch <URL> --format geoparquet --out output.parquet
+```
+
+-   **Parquet (tabular)**
+```bash
+ezesri fetch <URL> --format parquet --out output.parquet
+```
+
+-   **NDJSON (streaming)**
+```bash
+# to stdout
+ezesri fetch <URL> --format ndjson
+# to file
+ezesri fetch <URL> --format ndjson --out output.ndjson
+```
 You can also filter by a bounding box (in WGS84 coordinates) or an attribute query:
 ```bash
 ezesri fetch <URL> --bbox <xmin,ymin,xmax,ymax> --out <FILE>
@@ -79,6 +96,21 @@ ezesri fetch <URL> --where "STATUS = 'ACTIVE'" --out <FILE>
 
 ```bash
 ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gpkg
+```
+
+Per-layer bulk outputs:
+```bash
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format geoparquet
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format parquet
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format ndjson
+```
+
+Parallelism and rate limiting:
+```bash
+# run with 4 workers
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gpkg --workers 4
+# limit overall request rate to 1 req/s across workers
+ezesri bulk-fetch <YOUR_ESRI_SERVICE_URL> <YOUR_OUTPUT_DIRECTORY> --format gpkg --workers 4 --rate 1
 ```
 
 ### Bulk-fetch all layers from a service
