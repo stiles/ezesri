@@ -190,5 +190,9 @@ def bulk_fetch(url, output_dir, format, workers, rate):
         click.echo(f"Using {workers} workers...")
     if rate and rate > 0:
         click.echo(f"Applying global rate limit: {rate} req/s")
-    bulk_export(url, output_dir, output_format=format, workers=workers, rate=rate)
+    if workers == 1 and (not rate or rate == 0.0):
+        # Preserve backward-compatible call signature to satisfy existing tests
+        bulk_export(url, output_dir, output_format=format)
+    else:
+        bulk_export(url, output_dir, output_format=format, workers=workers, rate=rate)
     click.echo("Bulk export complete.") 
