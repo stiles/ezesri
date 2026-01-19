@@ -1,0 +1,19 @@
+# Large files and directories
+dist/
+site/
+examples/data/
+*.whl
+*.tar.gz
+*.shp
+*.dbf
+*.shx
+*.prj
+*.cpg
+
+# Python
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# Lambda (deployed separately)
+web/lambda/
