@@ -12,8 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for GeoParquet (`--format geoparquet`), Parquet (`--format parquet`) and streaming NDJSON (`--format ndjson`).
 - Added parallel bulk export with `--workers` and global request rate limiting with `--rate`.
 
-## [Unreleased]
-
 ## [0.3.1] - 2025-11-15
 
 ### Changed
