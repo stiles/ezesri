@@ -11,7 +11,7 @@ Many tools exist for interacting with Esri services, but they often come with tr
 
 ## Key features
 
--   **Multiple export formats**: Export to GeoJSON, Esri shapefile, GeoPackage, CSV, geodatabase. 
+ -   **Multiple export formats**: Export to GeoJSON, Esri shapefile, GeoPackage, CSV, geodatabase. 
     - Advanced: GeoParquet (spatial), Parquet (tabular), NDJSON (streaming)
 -   **Simple extraction**: Automatically handles Esri's pagination.
 -   **Filtering**: Filter data by bounding box, geometry, or attribute query.
