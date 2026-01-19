@@ -1,4 +1,10 @@
+import { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+
+export const metadata: Metadata = {
+  title: 'License - ezesri',
+  description: 'ezesri is released under the MIT License.',
+}
 
 const content = `# License
 

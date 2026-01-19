@@ -1,4 +1,10 @@
+import { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+
+export const metadata: Metadata = {
+  title: 'Developer guide - ezesri',
+  description: 'Set up a development environment, run tests and contribute to ezesri.',
+}
 
 const content = `# Developer guide
 

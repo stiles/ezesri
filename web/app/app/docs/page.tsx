@@ -1,4 +1,14 @@
+import { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+
+export const metadata: Metadata = {
+  title: 'Documentation - ezesri',
+  description: 'Learn how to use ezesri to extract data from Esri REST services. Installation, usage guides and API reference.',
+  openGraph: {
+    title: 'Documentation - ezesri',
+    description: 'Learn how to use ezesri to extract data from Esri REST services.',
+  },
+}
 
 const content = `# Welcome to ezesri
 

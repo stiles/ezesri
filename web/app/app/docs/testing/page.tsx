@@ -1,4 +1,10 @@
+import { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+
+export const metadata: Metadata = {
+  title: 'Testing - ezesri',
+  description: 'How to run the ezesri test suite with pytest. Test structure and when to run tests.',
+}
 
 const content = `# Testing ezesri
 

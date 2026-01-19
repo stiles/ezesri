@@ -1,4 +1,10 @@
+import { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+
+export const metadata: Metadata = {
+  title: 'Installation - ezesri',
+  description: 'How to install ezesri from PyPI. Requirements, optional dependencies and development setup.',
+}
 
 const content = `# Installation
 

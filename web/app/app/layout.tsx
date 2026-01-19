@@ -15,8 +15,52 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'ezesri - Extract Esri REST Data',
-  description: 'Download data from Esri REST services as GeoJSON. No installation required.',
-  keywords: ['esri', 'arcgis', 'geojson', 'gis', 'data extraction'],
+  description: 'Extract GeoJSON from any ArcGIS FeatureServer or MapServer. View metadata, apply filters and download data. No installation required.',
+  keywords: ['esri', 'arcgis', 'geojson', 'gis', 'data extraction', 'feature layer', 'map server', 'rest api', 'spatial data'],
+  authors: [{ name: 'Matt Stiles', url: 'https://mattstiles.me' }],
+  creator: 'Matt Stiles',
+  metadataBase: new URL('https://ezesri.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://ezesri.com',
+    siteName: 'ezesri',
+    title: 'ezesri - Extract Esri REST Data',
+    description: 'Extract GeoJSON from any ArcGIS FeatureServer or MapServer. View metadata, apply filters and download data. No installation required.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'ezesri - Extract Esri REST Data',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ezesri - Extract Esri REST Data',
+    description: 'Extract GeoJSON from any ArcGIS FeatureServer or MapServer. No installation required.',
+    creator: '@staboratory',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({

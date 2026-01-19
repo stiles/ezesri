@@ -1,4 +1,10 @@
+import { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+
+export const metadata: Metadata = {
+  title: 'Usage - ezesri',
+  description: 'How to use ezesri Python library and CLI. Extract layers, fetch metadata, apply filters and bulk export.',
+}
 
 const content = `# Usage
 
