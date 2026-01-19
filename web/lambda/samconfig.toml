@@ -1,0 +1,13 @@
+# SAM configuration for ezesri web API
+# Run: sam deploy --guided (first time) or sam deploy (subsequent)
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "ezesri-web-api"
+resolve_s3 = true
+s3_prefix = "ezesri-web-api"
+region = "us-west-2"
+profile = "haekeo"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"

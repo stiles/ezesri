@@ -1,0 +1,2 @@
+# Core dependencies (geopandas provided by Lambda layer)
+requests>=2.28.0

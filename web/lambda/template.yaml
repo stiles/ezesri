@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ezesri Web API - Extract data from Esri REST services
+
+Globals:
+  Function:
+    Timeout: 29  # API Gateway max timeout
+    MemorySize: 1024
+    Runtime: python3.11
+
+Resources:
+  ExtractFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handler.lambda_handler
+      Description: ezesri web API for extracting Esri REST data
+      Layers:
+        - arn:aws:lambda:us-west-2:399949164916:layer:shapely-python311:1
+      Events:
+        MetadataApi:
+          Type: Api
+          Properties:
+            Path: /metadata
+            Method: get
+            RestApiId: !Ref EzesriApi
+        ExtractApi:
+          Type: Api
+          Properties:
+            Path: /extract
+            Method: post
+            RestApiId: !Ref EzesriApi
+        RootApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+            RestApiId: !Ref EzesriApi
+      Tags:
+        Project: ezesri
+
+  EzesriApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET, POST, OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+      Description: ezesri Web API
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${EzesriApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt ExtractFunction.Arn
