@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'ezesri - Extract Esri REST Data',
+  title: 'ezesri - Extract GeoJSON from ArcGIS REST Services',
   description: 'Extract GeoJSON from any ArcGIS FeatureServer or MapServer. View metadata, apply filters and download data. No installation required.',
   keywords: ['esri', 'arcgis', 'geojson', 'gis', 'data extraction', 'feature layer', 'map server', 'rest api', 'spatial data'],
   authors: [{ name: 'Matt Stiles', url: 'https://mattstiles.me' }],
@@ -28,20 +28,20 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://ezesri.com',
     siteName: 'ezesri',
-    title: 'ezesri - Extract Esri REST Data',
+    title: 'ezesri - Extract GeoJSON from ArcGIS REST Services',
     description: 'Extract GeoJSON from any ArcGIS FeatureServer or MapServer. View metadata, apply filters and download data. No installation required.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ezesri - Extract Esri REST Data',
+        alt: 'ezesri - Extract GeoJSON from ArcGIS REST Services',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ezesri - Extract Esri REST Data',
+    title: 'ezesri - Extract GeoJSON from ArcGIS REST Services',
     description: 'Extract GeoJSON from any ArcGIS FeatureServer or MapServer. No installation required.',
     creator: '@staboratory',
     images: ['/og-image.png'],
