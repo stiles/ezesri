@@ -48,15 +48,23 @@ export default function FilterOptions({
         {(textFields.length > 0 || numericFields.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="text-xs text-ink-600">Fields:</span>
-            {textFields.map((f, i) => (
-              <button
-                key={i}
-                onClick={() => onWhereChange(`${f.name} = ''`)}
-                className="text-xs font-mono text-ember-400/70 hover:text-ember-400 transition-colors"
-              >
-                {f.name}
-              </button>
-            ))}
+            {textFields.map((f, i) => {
+              const samples = metadata.sampleValues?.[f.name]
+              const exampleValue = samples?.[0] || ''
+              return (
+                <button
+                  key={i}
+                  onClick={() => onWhereChange(`${f.name} = '${exampleValue}'`)}
+                  className="text-xs font-mono text-ember-400/70 hover:text-ember-400 transition-colors group relative"
+                  title={samples ? `Examples: ${samples.join(', ')}` : undefined}
+                >
+                  {f.name}
+                  {samples && (
+                    <span className="text-ink-600 group-hover:text-ink-500"> ({samples[0].slice(0, 15)}{samples[0].length > 15 ? '…' : ''})</span>
+                  )}
+                </button>
+              )
+            })}
             {numericFields.map((f, i) => (
               <button
                 key={i}

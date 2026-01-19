@@ -5,7 +5,7 @@ import UrlInput from '@/components/UrlInput'
 import MetadataPanel from '@/components/MetadataPanel'
 import FilterOptions from '@/components/FilterOptions'
 import DownloadButton from '@/components/DownloadButton'
-import { fetchMetadata, LayerMetadata } from '@/lib/api'
+import { fetchMetadata, fetchSampleValues, LayerMetadata } from '@/lib/api'
 
 export default function Home() {
   const [url, setUrl] = useState('')
@@ -28,6 +28,20 @@ export default function Home() {
     try {
       const data = await fetchMetadata(inputUrl)
       setMetadata(data)
+      
+      // Fetch sample values in background for string/text fields
+      const textFields = data.fields
+        .filter(f => f.type === 'String' || f.type === 'esriFieldTypeString')
+        .slice(0, 10)
+        .map(f => f.name)
+      
+      if (textFields.length > 0) {
+        fetchSampleValues(inputUrl, textFields).then(samples => {
+          if (Object.keys(samples).length > 0) {
+            setMetadata(prev => prev ? { ...prev, sampleValues: samples } : prev)
+          }
+        })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch metadata')
     } finally {
@@ -69,11 +83,11 @@ export default function Home() {
         {/* Hero section */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-ink-100 mb-4">
-            Download data from Esri REST services
+            Unlock GIS data from Esri REST services
           </h2>
           <p className="text-ink-400 max-w-2xl mx-auto">
-            Paste any ArcGIS Feature Layer or Map Server URL. Get metadata, apply filters, 
-            and export to GeoJSON or Shapefile. No installation required.
+            Paste any ArcGIS Feature Layer or Map Server URL.<br></br> 
+            Get metadata, apply filters and export to GeoJSON. No installation required.
           </p>
         </div>
         

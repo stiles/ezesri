@@ -1,31 +1,38 @@
 # ezesri
 
-`ezesri` is a lightweight Python package for extracting data and metadata from Esri REST API endpoints. It provides a modular API and optional CLI for exporting feature layers and metadata to common formats, with robust handling of Esri-specific pagination and filtering.
+Extract data from Esri REST API endpoints. Available as a **[web app](https://ezesri.com)**, Python library and CLI.
 
-## Why ezesri?
+## Web app
+
+Don't have Python installed? Use the web app at **[ezesri.com](https://ezesri.com)** to extract GeoJSON directly in your browser. No installation required.
+
+## Python package
+
+`ezesri` is also a lightweight Python package for extracting data and metadata from Esri REST API endpoints. It provides a modular API and optional CLI for exporting feature layers and metadata to common formats, with robust handling of Esri-specific pagination and filtering.
+
+### Why use the Python package?
 
 Many tools exist for interacting with Esri services, but they often come with trade-offs:
 -   **pysridump/esridump**: Simple and widely used, but not modular, lacks modern export formats, and is not actively maintained.
 -   **ArcGIS API for Python**: A full-featured Esri SDK, but its heavy dependencies make it overkill for simple data extraction.
 -   **ogr2ogr (GDAL)**: Extremely powerful, but can be complex to use and is not a native Python library.
 
-## Key features
+### Key features
 
- -   **Multiple export formats**: Export to GeoJSON, Esri shapefile, GeoPackage, CSV, geodatabase. 
-    - Advanced: GeoParquet (spatial), Parquet (tabular), NDJSON (streaming)
--   **Simple extraction**: Automatically handles Esri's pagination.
--   **Filtering**: Filter data by bounding box, geometry, or attribute query.
--   **Bulk exports**: Download all layers from a MapServer or FeatureServer.
--   **CLI**: An easy-to-use command-line interface for all features.
--   **Human-readable metadata**: Fetch a clean summary of a layer's metadata.
+-   **Multiple export formats**: GeoJSON, Shapefile, GeoPackage, File Geodatabase, GeoParquet, Parquet, NDJSON
+-   **Automatic pagination**: Handles Esri's record limits seamlessly
+-   **Filtering**: Filter by bounding box, geometry, or SQL where clause
+-   **Bulk exports**: Download all layers from a MapServer or FeatureServer
+-   **CLI**: Command-line interface for quick extraction
+-   **Clean metadata**: Human-readable layer summaries
 
-## Installation
+### Installation
 
 ```bash
 pip install ezesri
 ```
 
-## Quickstart
+### Quickstart
 
 Here's a simple example of how to use `ezesri` as a library to extract data and metadata.
 
@@ -47,11 +54,11 @@ print(f"Successfully extracted {len(gdf)} features.")
 print(gdf.head())
 ```
 
-## Usage
 ## Documentation
 
-You can read the full documentation on Read the Docs: https://ezesri.readthedocs.io/
+Full documentation is available at **[ezesri.com/docs](https://ezesri.com/docs)**
 
+## Usage
 
 ### Python library
 
@@ -168,7 +175,7 @@ python examples/01_palm_springs_pools_map.py
 
 ## Testing
 
-This project uses `pytest` for unit testing. For details on how to run the test suite, please see the [testing guide](docs/testing.md).
+This project uses `pytest` for unit testing. For details on how to run the test suite, please see the [testing guide](https://ezesri.com/docs/testing).
 
 ## Contributing
 

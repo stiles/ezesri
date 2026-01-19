@@ -135,7 +135,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
           rel="noopener noreferrer"
           className="text-ember-400 hover:text-ember-300 underline underline-offset-2"
         >
-          Try the CLI. 
+          Try it with a simple API or using a CLI. 
         </a>
       </p>
     </div>

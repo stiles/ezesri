@@ -19,12 +19,20 @@ export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
   
   const exampleUrls = [
     {
-      label: 'US Cities',
+      label: 'US cities',
       url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0'
     },
     {
-      label: 'US States',
+      label: 'US states',
       url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2'
+    },
+    {
+      label: 'LA city boundary',
+      url: 'https://maps.lacity.org/lahub/rest/services/Boundaries/MapServer/7'
+    },
+    {
+      label: 'NYC borough boundaries',
+      url: 'https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/Borough_view/FeatureServer/0'
     }
   ]
   
