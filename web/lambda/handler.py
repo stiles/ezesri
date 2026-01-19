@@ -2,22 +2,14 @@
 AWS Lambda handler for ezesri web API.
 
 Provides endpoints for extracting data from Esri REST services.
-Uses Lambda Function URL (not API Gateway) to avoid 29-second timeout.
+Currently supports GeoJSON export. Shapefile/GeoParquet require additional setup.
 """
 
 import json
 import logging
-import io
-import zipfile
 import base64
-import tempfile
-import os
-import sys
 from typing import Dict, Any, Optional
 from urllib.parse import parse_qs, urlparse
-
-# Add parent directory to path so we can import ezesri
-sys.path.insert(0, '/opt/python')  # Lambda layer path
 
 import requests
 
@@ -196,41 +188,6 @@ def extract_layer(
     }
 
 
-def geojson_to_shapefile_zip(geojson: dict) -> bytes:
-    """
-    Converts GeoJSON to a zipped shapefile.
-    
-    Uses geopandas (available via Lambda layer).
-    Returns zip file bytes.
-    """
-    import geopandas as gpd
-    
-    # Create GeoDataFrame from GeoJSON
-    if not geojson.get('features'):
-        raise ValueError("No features to convert")
-    
-    gdf = gpd.GeoDataFrame.from_features(geojson['features'], crs="EPSG:4326")
-    
-    if gdf.empty:
-        raise ValueError("No valid features to convert")
-    
-    # Write to temp directory
-    with tempfile.TemporaryDirectory() as tmpdir:
-        shp_path = os.path.join(tmpdir, "export.shp")
-        gdf.to_file(shp_path, driver="ESRI Shapefile")
-        
-        # Create zip of all shapefile components
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for ext in ['.shp', '.shx', '.dbf', '.prj', '.cpg']:
-                filepath = os.path.join(tmpdir, f"export{ext}")
-                if os.path.exists(filepath):
-                    zf.write(filepath, f"export{ext}")
-        
-        zip_buffer.seek(0)
-        return zip_buffer.read()
-
-
 def handle_metadata(url: str) -> Dict[str, Any]:
     """Handle /metadata endpoint."""
     if not url:
@@ -308,26 +265,11 @@ def handle_extract(params: dict) -> Dict[str, Any]:
             "contentType": "application/geo+json",
             "filename": "export.geojson"
         }
-    elif format_type == 'shapefile':
-        try:
-            zip_bytes = geojson_to_shapefile_zip(result)
-            return {
-                "statusCode": 200,
-                "body": base64.b64encode(zip_bytes).decode('utf-8'),
-                "isBase64Encoded": True,
-                "contentType": "application/zip",
-                "filename": "export.zip"
-            }
-        except Exception as e:
-            logger.error(f"Shapefile conversion failed: {e}")
-            return {
-                "statusCode": 500,
-                "body": {"error": f"Shapefile conversion failed: {e}"}
-            }
     else:
+        # Shapefile and GeoParquet require geopandas which needs a container deployment
         return {
             "statusCode": 400,
-            "body": {"error": f"Unsupported format: {format_type}. Use 'geojson' or 'shapefile'."}
+            "body": {"error": f"Format '{format_type}' is not yet supported. Currently only 'geojson' is available."}
         }
 
 
@@ -396,9 +338,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "body": {
                     "service": "ezesri",
                     "version": "1.0.0",
+                    "formats": ["geojson"],
                     "endpoints": {
                         "/metadata": "GET - Fetch layer metadata",
-                        "/extract": "POST - Extract layer data"
+                        "/extract": "POST - Extract layer data (GeoJSON)"
                     }
                 }
             }

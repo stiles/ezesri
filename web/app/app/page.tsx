@@ -162,13 +162,45 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-ink-800 mt-24">
         <div className="max-w-5xl mx-auto px-6 py-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-500">
-            <p>
-              Built with <a href="https://github.com/stiles/ezesri" className="text-ember-400 hover:text-ember-300">ezesri</a>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-ink-100">ezesri</h3>
+            <p className="text-sm text-ink-500">
+              Extract data from Esri REST services without the hassle.
             </p>
-            <p>
-              Open source under MIT License
-            </p>
+            <div className="flex flex-col gap-1 text-sm">
+              <a href="/docs" className="text-ember-400 hover:text-ember-300 transition-colors">
+                Read the docs
+              </a>
+              <a 
+                href="https://github.com/stiles/ezesri" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-ember-400 hover:text-ember-300 transition-colors"
+              >
+                View the code
+              </a>
+              <a 
+                href="https://buymeacoffee.com/mattstiles" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-ember-400 hover:text-ember-300 transition-colors"
+              >
+                Support this tool
+              </a>
+            </div>
+            <div className="border-t border-ink-800 pt-4 mt-4">
+              <p className="text-sm text-ink-500">
+                © 2025{' '}
+                <a 
+                  href="https://mattstiles.me" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-ember-400 hover:text-ember-300 transition-colors"
+                >
+                  Matt Stiles
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </footer>

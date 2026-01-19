@@ -10,7 +10,7 @@ interface DownloadButtonProps {
   bbox: string
 }
 
-type Format = 'geojson' | 'shapefile'
+type Format = 'geojson'
 
 export default function DownloadButton({ url, metadata, where, bbox }: DownloadButtonProps) {
   const [format, setFormat] = useState<Format>('geojson')
@@ -33,8 +33,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
       
       // Generate filename from layer name
       const safeName = metadata.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-      const extension = format === 'geojson' ? '.geojson' : '.zip'
-      downloadBlob(blob, `${safeName}${extension}`)
+      downloadBlob(blob, `${safeName}.geojson`)
       
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Download failed')
@@ -49,12 +48,6 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
       label: 'GeoJSON', 
       icon: '{ }',
       disabled: false
-    },
-    { 
-      value: 'shapefile', 
-      label: 'Shapefile', 
-      icon: '.shp',
-      disabled: !metadata.hasGeometry
     },
   ]
   
@@ -108,7 +101,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Download {format === 'geojson' ? 'GeoJSON' : 'Shapefile'}
+            Download GeoJSON
           </>
         )}
       </button>
@@ -132,6 +125,19 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
           {error}
         </div>
       )}
+      
+      {/* CLI promotion */}
+      <p className="text-xs text-ink-500 pt-2">
+        Need shapefile or other formats?{' '}
+        <a 
+          href="https://ezesri.com/docs" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-ember-400 hover:text-ember-300 underline underline-offset-2"
+        >
+          Try the CLI. 
+        </a>
+      </p>
     </div>
   )
 }
