@@ -27,20 +27,20 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
   
   const exampleUrls = [
     {
-      label: 'USA cities',
+      label: 'US cities',
       url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0'
     },
     {
-      label: 'Current US wildfires',
-      url: 'https://services9.arcgis.com/RHVPKKiFTONKtxq3/ArcGIS/rest/services/USA_Wildfires_v1/FeatureServer/1'
+      label: 'Japan prefecture boundaries',
+      url: 'https://services.arcgis.com/wlVTGRSYTzAbjjiC/arcgis/rest/services/%E5%8D%98%E7%B4%94%E5%8C%96%E9%83%BD%E9%81%93%E5%BA%9C%E7%9C%8C/FeatureServer/0'
     },
     {
       label: 'NWS weather warnings',
       url: 'https://services9.arcgis.com/RHVPKKiFTONKtxq3/ArcGIS/rest/services/NWS_Watches_Warnings_v1/FeatureServer/8'
     },
     {
-      label: 'NYC boroughs',
-      url: 'https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/Borough_view/FeatureServer/0'
+      label: 'LAPD stations',
+      url: 'https://services5.arcgis.com/7nsPwEMP38bSkCjy/ArcGIS/rest/services/LAPD_Police_Stations/FeatureServer/0'
     }
   ]
   
