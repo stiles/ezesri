@@ -6,6 +6,10 @@ Extract data from Esri REST API endpoints. Available as a **[web app](https://ez
 
 Don't have Python installed? Use the web app at **[ezesri.com](https://ezesri.com)** to extract GeoJSON directly in your browser. No installation required.
 
+## Public Data Directory
+
+Browse **8,000+ public ArcGIS Feature Services** from government agencies worldwide at **[ezesri.com/directory](https://ezesri.com/directory)**. Find parcels, zoning, elections, crime data, demographics and more — all searchable and filterable by category.
+
 ## Python package
 
 `ezesri` is also a lightweight Python package for extracting data and metadata from Esri REST API endpoints. It provides a modular API and optional CLI for exporting feature layers and metadata to common formats, with robust handling of Esri-specific pagination and filtering.

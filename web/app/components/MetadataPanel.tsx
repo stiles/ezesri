@@ -58,25 +58,25 @@ export default function MetadataPanel({ metadata }: MetadataPanelProps) {
           <div className="text-2xl font-semibold text-ink-100">
             {formatNumber(metadata.featureCount)}
           </div>
-          <div className="text-xs text-ink-500 uppercase tracking-wide mt-1">Features</div>
+          <div className="text-xs text-ink-400 uppercase tracking-wide mt-1">Features</div>
         </div>
         <div className="bg-ink-900/30 rounded-lg p-4 border border-ink-800">
           <div className="text-2xl font-semibold text-ink-100">
             {metadata.fields.length}
           </div>
-          <div className="text-xs text-ink-500 uppercase tracking-wide mt-1">Fields</div>
+          <div className="text-xs text-ink-400 uppercase tracking-wide mt-1">Fields</div>
         </div>
         <div className={`rounded-lg p-4 border ${metadata.hasGeometry ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
           <div className={`text-lg font-semibold ${metadata.hasGeometry ? 'text-emerald-300' : 'text-amber-300'}`}>
             {metadata.hasGeometry ? (metadata.geometryType || 'Geometry') : 'Table'}
           </div>
-          <div className="text-xs text-ink-500 uppercase tracking-wide mt-1">Type</div>
+          <div className="text-xs text-ink-400 uppercase tracking-wide mt-1">Type</div>
         </div>
         <div className="bg-ink-900/30 rounded-lg p-4 border border-ink-800">
           <div className="text-lg font-semibold text-ink-100">
             {getProjectionName(metadata.spatialReference)}
           </div>
-          <div className="text-xs text-ink-500 uppercase tracking-wide mt-1">Projection</div>
+          <div className="text-xs text-ink-400 uppercase tracking-wide mt-1">Projection</div>
         </div>
       </div>
       
@@ -100,7 +100,7 @@ export default function MetadataPanel({ metadata }: MetadataPanelProps) {
                     <tr key={i} className="hover:bg-ink-800/30 transition-colors">
                       <td className="px-4 py-2 font-mono text-ink-200">{field.name}</td>
                       <td className="px-4 py-2 text-ink-400">{field.type}</td>
-                      <td className="px-4 py-2 text-ink-500 max-w-xs">
+                      <td className="px-4 py-2 text-ink-400 max-w-xs">
                         {samples ? (
                           <span className="font-mono text-xs text-ember-400/70">
                             {samples.map((v, j) => (

@@ -35,7 +35,7 @@ export default function FilterOptions({
       
       {/* Where clause */}
       <div>
-        <label className="block text-xs text-ink-500 mb-2">SQL Where Clause</label>
+        <label className="block text-xs text-ink-400 mb-2">SQL Where Clause</label>
         <input
           type="text"
           value={where}
@@ -60,7 +60,7 @@ export default function FilterOptions({
                 >
                   {f.name}
                   {samples && (
-                    <span className="text-ink-600 group-hover:text-ink-500"> ({samples[0].slice(0, 15)}{samples[0].length > 15 ? '…' : ''})</span>
+                    <span className="text-ink-600 group-hover:text-ink-400"> ({samples[0].slice(0, 15)}{samples[0].length > 15 ? '…' : ''})</span>
                   )}
                 </button>
               )
@@ -98,7 +98,7 @@ export default function FilterOptions({
           
           {showBbox && (
             <div className="mt-3 animate-slide-up">
-              <label className="block text-xs text-ink-500 mb-2">
+              <label className="block text-xs text-ink-400 mb-2">
                 Coordinates (WGS84): xmin, ymin, xmax, ymax
               </label>
               <input

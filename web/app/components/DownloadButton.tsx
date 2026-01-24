@@ -83,7 +83,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
         disabled={isDownloading}
         className="w-full px-6 py-4 bg-gradient-to-r from-ember-600 to-ember-500 
                    hover:from-ember-500 hover:to-ember-400
-                   disabled:from-ink-700 disabled:to-ink-700 disabled:text-ink-500
+                   disabled:from-ink-700 disabled:to-ink-700 disabled:text-ink-400
                    text-white font-semibold rounded-lg 
                    transition-all flex items-center justify-center gap-3
                    shadow-lg shadow-ember-900/30"
@@ -127,7 +127,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
       )}
       
       {/* CLI promotion */}
-      <p className="text-xs text-ink-500 pt-2">
+      <p className="text-xs text-ink-400 pt-2">
         Need shapefile or other formats?{' '}
         <a 
           href="https://ezesri.com/docs" 

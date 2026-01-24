@@ -1,14 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface UrlInputProps {
   onFetch: (url: string) => void
   isLoading: boolean
+  initialUrl?: string
 }
 
-export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
-  const [url, setUrl] = useState('')
+export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputProps) {
+  const [url, setUrl] = useState(initialUrl || '')
+
+  // Update URL when initialUrl changes (e.g., from query param)
+  useEffect(() => {
+    if (initialUrl) {
+      setUrl(initialUrl)
+    }
+  }, [initialUrl])
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,19 +27,19 @@ export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
   
   const exampleUrls = [
     {
-      label: 'US cities',
+      label: 'USA cities',
       url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0'
     },
     {
-      label: 'US states',
-      url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2'
+      label: 'Current US wildfires',
+      url: 'https://services9.arcgis.com/RHVPKKiFTONKtxq3/ArcGIS/rest/services/USA_Wildfires_v1/FeatureServer/1'
     },
     {
-      label: 'LA city boundary',
-      url: 'https://maps.lacity.org/lahub/rest/services/Boundaries/MapServer/7'
+      label: 'NWS weather warnings',
+      url: 'https://services9.arcgis.com/RHVPKKiFTONKtxq3/ArcGIS/rest/services/NWS_Watches_Warnings_v1/FeatureServer/8'
     },
     {
-      label: 'NYC borough boundaries',
+      label: 'NYC boroughs',
       url: 'https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/Borough_view/FeatureServer/0'
     }
   ]
@@ -46,7 +54,7 @@ export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Paste Esri REST layer URL..."
             className="w-full px-4 py-3 bg-ink-900/50 border border-ink-700 rounded-lg 
-                       text-ink-100 placeholder:text-ink-500 font-mono text-sm
+                       text-ink-100 placeholder:text-ink-400 font-mono text-sm
                        focus:border-ember-500/50 transition-colors"
             disabled={isLoading}
           />
@@ -54,7 +62,7 @@ export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
             <button
               type="button"
               onClick={() => setUrl('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-300"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -66,7 +74,7 @@ export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
           type="submit"
           disabled={!url.trim() || isLoading}
           className="px-6 py-3 bg-ember-600 hover:bg-ember-500 disabled:bg-ink-700 
-                     disabled:text-ink-500 text-white font-medium rounded-lg 
+                     disabled:text-ink-400 text-white font-medium rounded-lg 
                      transition-colors flex items-center gap-2"
         >
           {isLoading ? (
@@ -88,16 +96,18 @@ export default function UrlInput({ onFetch, isLoading }: UrlInputProps) {
         </button>
       </form>
       
-      <div className="flex items-center gap-2 text-sm text-ink-500">
+      <div className="flex items-center gap-1 text-sm text-ink-400">
         <span>Try:</span>
         {exampleUrls.map((example, i) => (
-          <button
-            key={i}
-            onClick={() => setUrl(example.url)}
-            className="text-ember-400 hover:text-ember-300 hover:underline transition-colors"
-          >
-            {example.label}
-          </button>
+          <span key={i} className="flex items-center">
+            <button
+              onClick={() => setUrl(example.url)}
+              className="text-ember-400 hover:text-ember-300 hover:underline transition-colors"
+            >
+              {example.label}
+            </button>
+            {i < exampleUrls.length - 1 && <span className="text-ink-300">,</span>}
+          </span>
         ))}
       </div>
     </div>

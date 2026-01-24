@@ -19,6 +19,12 @@ __pycache__/
 
 .PLANNING.md
 
+# Harvester outputs
+harvester/sample_output/
+harvester/catalog.json
+harvester/directory.md
+web/app/public/catalog.json
+
 # Distribution / packaging
 .Python
 build/
