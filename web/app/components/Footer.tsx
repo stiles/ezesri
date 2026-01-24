@@ -1,7 +1,7 @@
 export default function Footer() {
   return (
-    <footer className="border-t border-ink-800 mt-24">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <footer className="border-t border-ink-800 mt-16 sm:mt-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-col sm:flex-row justify-between gap-6">
           <div>
             <h3 className="text-lg font-semibold text-ink-100">ezesri</h3>

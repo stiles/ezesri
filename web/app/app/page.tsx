@@ -76,8 +76,7 @@ function HomeContent() {
             Unlock GIS data from Esri REST services
           </h2>
           <p className="text-ink-400 max-w-2xl mx-auto">
-            Paste any ArcGIS feature layer or map server URL.<br></br> 
-            Get metadata, apply filters and export to GeoJSON. No installation required.
+            Paste any ArcGIS feature layer or map server URL. Get metadata, apply filters and export to GeoJSON. No installation needed.
           </p>
         </div>
         

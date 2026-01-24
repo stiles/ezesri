@@ -31,12 +31,8 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
       url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0'
     },
     {
-      label: 'Japan prefecture boundaries',
-      url: 'https://services.arcgis.com/wlVTGRSYTzAbjjiC/arcgis/rest/services/%E5%8D%98%E7%B4%94%E5%8C%96%E9%83%BD%E9%81%93%E5%BA%9C%E7%9C%8C/FeatureServer/0'
-    },
-    {
-      label: 'NWS weather warnings',
-      url: 'https://services9.arcgis.com/RHVPKKiFTONKtxq3/ArcGIS/rest/services/NWS_Watches_Warnings_v1/FeatureServer/8'
+      label: 'North Korea missle ranges',
+      url: 'https://services.arcgis.com/hRUr1F8lE8Jq2uJo/ArcGIS/rest/services/NorthKoreaMissiles/FeatureServer/0'
     },
     {
       label: 'LAPD stations',
@@ -97,7 +93,7 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
       </form>
       
       <div className="flex items-center gap-1 text-sm text-ink-400">
-        <span>Try:</span>
+        <span>For example:</span>
         {exampleUrls.map((example, i) => (
           <span key={i} className="flex items-center">
             <button
