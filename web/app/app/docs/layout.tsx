@@ -24,13 +24,16 @@ export default function DocsLayout({
       {/* Header */}
       <header className="border-b border-ink-800 bg-ink-950/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-ember-500 to-ember-600 
-                          flex items-center justify-center text-white font-bold text-sm
-                          group-hover:from-ember-400 group-hover:to-ember-500 transition-all">
-              ez
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-ember-500 to-ember-600 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
             </div>
-            <span className="font-semibold text-ink-100">ezesri</span>
+            <div>
+              <h1 className="text-lg font-semibold text-ink-100">ezesri</h1>
+              <p className="text-xs text-ink-500">Extract Esri REST data</p>
+            </div>
           </Link>
           <nav className="flex items-center gap-6 text-sm">
             <Link href="/" className="text-ink-400 hover:text-ink-200 transition-colors">
