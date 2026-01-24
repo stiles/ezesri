@@ -23,7 +23,6 @@ __pycache__/
 harvester/sample_output/
 harvester/catalog.json
 harvester/directory.md
-web/app/public/catalog.json
 
 # Distribution / packaging
 .Python
