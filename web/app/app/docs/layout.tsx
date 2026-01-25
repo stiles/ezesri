@@ -8,6 +8,7 @@ const navItems = [
   { href: '/docs', label: 'Introduction' },
   { href: '/docs/installation', label: 'Installation' },
   { href: '/docs/usage', label: 'Usage' },
+  { href: '/docs/journalists', label: 'Tips for journalists' },
   { href: '/docs/developer', label: 'Developer guide' },
   { href: '/docs/testing', label: 'Testing' },
   { href: '/docs/license', label: 'License' },

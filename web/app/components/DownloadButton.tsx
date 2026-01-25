@@ -10,7 +10,7 @@ interface DownloadButtonProps {
   bbox: string
 }
 
-type Format = 'geojson'
+type Format = 'geojson' | 'csv'
 
 export default function DownloadButton({ url, metadata, where, bbox }: DownloadButtonProps) {
   const [format, setFormat] = useState<Format>('geojson')
@@ -29,11 +29,12 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
         bbox: bbox || undefined,
       }
       
-      const { blob, filename } = await extractLayer(params)
+      const { blob } = await extractLayer(params)
       
-      // Generate filename from layer name
+      // Generate filename from layer name with correct extension
       const safeName = metadata.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-      downloadBlob(blob, `${safeName}.geojson`)
+      const extension = format === 'csv' ? 'csv' : 'geojson'
+      downloadBlob(blob, `${safeName}.${extension}`)
       
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Download failed')
@@ -42,12 +43,20 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
     }
   }
   
-  const formats: { value: Format; label: string; icon: string; disabled: boolean }[] = [
+  const formats: { value: Format; label: string; icon: string; disabled: boolean; description: string }[] = [
     { 
       value: 'geojson', 
       label: 'GeoJSON', 
       icon: '{ }',
-      disabled: false
+      disabled: false,
+      description: 'For mapping'
+    },
+    { 
+      value: 'csv', 
+      label: 'CSV', 
+      icon: '📊',
+      disabled: false,
+      description: 'For spreadsheets'
     },
   ]
   
@@ -71,8 +80,9 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
               ${f.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             `}
           >
-            <div className="text-lg font-mono">{f.icon}</div>
-            <div className="text-sm mt-1">{f.label}</div>
+            <div className="text-lg">{f.icon}</div>
+            <div className="text-sm mt-1 font-medium">{f.label}</div>
+            <div className="text-xs text-ink-500 mt-0.5">{f.description}</div>
           </button>
         ))}
       </div>
@@ -101,7 +111,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Download GeoJSON
+            Download {format === 'csv' ? 'CSV' : 'GeoJSON'}
           </>
         )}
       </button>

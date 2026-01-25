@@ -2,9 +2,11 @@
 AWS Lambda handler for ezesri web API.
 
 Provides endpoints for extracting data from Esri REST services.
-Currently supports GeoJSON export. Shapefile/GeoParquet require additional setup.
+Supports GeoJSON and CSV export. Shapefile/GeoParquet require additional setup.
 """
 
+import csv
+import io
 import json
 import logging
 import base64
@@ -19,6 +21,58 @@ logger.setLevel(logging.INFO)
 
 # Feature count limit to prevent timeout/payload issues on massive layers
 MAX_FEATURES = 100000
+
+
+def geojson_to_csv(geojson: dict) -> str:
+    """
+    Convert GeoJSON FeatureCollection to CSV string.
+    
+    Flattens properties and optionally includes geometry as WKT or lat/lon.
+    """
+    features = geojson.get('features', [])
+    if not features:
+        return ""
+    
+    # Collect all unique field names from all features
+    all_fields = set()
+    for feature in features:
+        props = feature.get('properties', {})
+        if props:
+            all_fields.update(props.keys())
+    
+    # Sort fields for consistent column order
+    field_names = sorted(all_fields)
+    
+    # Check if we have point geometry - if so, add lat/lon columns
+    has_geometry = features[0].get('geometry') is not None
+    geom_type = features[0].get('geometry', {}).get('type', '') if has_geometry else ''
+    include_latlon = geom_type == 'Point'
+    
+    # Build CSV
+    output = io.StringIO()
+    
+    # Add lat/lon columns for point data
+    if include_latlon:
+        columns = field_names + ['latitude', 'longitude']
+    else:
+        columns = field_names
+    
+    writer = csv.DictWriter(output, fieldnames=columns, extrasaction='ignore')
+    writer.writeheader()
+    
+    for feature in features:
+        row = feature.get('properties', {}) or {}
+        
+        # Add lat/lon for point geometries
+        if include_latlon and feature.get('geometry'):
+            coords = feature['geometry'].get('coordinates', [])
+            if len(coords) >= 2:
+                row['longitude'] = coords[0]
+                row['latitude'] = coords[1]
+        
+        writer.writerow(row)
+    
+    return output.getvalue()
 
 
 def get_metadata(url: str) -> dict:
@@ -266,11 +320,20 @@ def handle_extract(params: dict) -> Dict[str, Any]:
             "contentType": "application/geo+json",
             "filename": "export.geojson"
         }
+    elif format_type == 'csv':
+        csv_data = geojson_to_csv(result)
+        return {
+            "statusCode": 200,
+            "body": csv_data,
+            "contentType": "text/csv",
+            "filename": "export.csv",
+            "isRaw": True  # Signal that body is already a string, not JSON
+        }
     else:
         # Shapefile and GeoParquet require geopandas which needs a container deployment
         return {
             "statusCode": 400,
-            "body": {"error": f"Format '{format_type}' is not yet supported. Currently only 'geojson' is available."}
+            "body": {"error": f"Format '{format_type}' is not yet supported. Available formats: geojson, csv"}
         }
 
 
@@ -339,10 +402,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "body": {
                     "service": "ezesri",
                     "version": "1.0.0",
-                    "formats": ["geojson"],
+                    "formats": ["geojson", "csv"],
                     "endpoints": {
                         "/metadata": "GET - Fetch layer metadata",
-                        "/extract": "POST - Extract layer data (GeoJSON)"
+                        "/extract": "POST - Extract layer data (GeoJSON or CSV)"
                     }
                 }
             }
@@ -357,6 +420,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body = result.get('body', {})
         content_type = result.get('contentType', 'application/json')
         is_base64 = result.get('isBase64Encoded', False)
+        is_raw = result.get('isRaw', False)  # For CSV and other text formats
         
         headers = {
             "Content-Type": content_type,
@@ -377,6 +441,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if is_base64:
             response["body"] = body
             response["isBase64Encoded"] = True
+        elif is_raw:
+            # Already a string (CSV, etc.) - don't JSON serialize
+            response["body"] = body
         else:
             response["body"] = json.dumps(body)
         

@@ -29,7 +29,7 @@ export interface LayerMetadata {
 
 export interface ExtractParams {
   url: string
-  format: 'geojson' | 'shapefile' | 'geoparquet'
+  format: 'geojson' | 'csv' | 'shapefile' | 'geoparquet'
   where?: string
   bbox?: string
 }
@@ -131,6 +131,13 @@ export async function extractLayer(params: ExtractParams): Promise<{ blob: Blob;
     return { blob, filename: 'export.geojson' }
   }
   
+  if (contentType.includes('text/csv')) {
+    // CSV response
+    const text = await response.text()
+    const blob = new Blob([text], { type: 'text/csv' })
+    return { blob, filename: 'export.csv' }
+  }
+  
   if (contentType.includes('application/zip')) {
     // Shapefile zip response
     const blob = await response.blob()
@@ -143,8 +150,15 @@ export async function extractLayer(params: ExtractParams): Promise<{ blob: Blob;
     return { blob, filename: 'export.parquet' }
   }
   
-  // Unexpected response
+  // Unexpected response - might be plain text CSV without proper content-type
   const text = await response.text()
+  
+  // Check if it looks like CSV (starts with header row)
+  if (text.includes(',') && text.includes('\n') && !text.startsWith('{')) {
+    const blob = new Blob([text], { type: 'text/csv' })
+    return { blob, filename: 'export.csv' }
+  }
+  
   throw new Error(`Unexpected response: ${text.substring(0, 200)}`)
 }
 
