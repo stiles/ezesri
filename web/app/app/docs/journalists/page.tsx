@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   },
 }
 
-const content = `# Tips for Journalists
+const content = `# Tips for journalists
 
 Local governments often publish spatial data to Esri before (or instead of) posting it anywhere else. Their GIS department is sometimes more open than their records office. Here's how to find stories in that data.
 
-## Search the Directory
+## Search the directory
 
 Use the [data directory](/directory) to search by keyword. Try your city or county name plus these terms:
 
@@ -24,7 +24,6 @@ Use the [data directory](/directory) to search by keyword. Try your city or coun
 - **"zoning"** — Rezoning requests often signal coming development fights
 - **"TIF"** or **"tax increment"** — Public subsidies to developers, often underreported
 - **"assessments"** or **"property"** — Property values, ownership changes, sales history
-- **"parcels"** - See who owns the land
 
 ### Environment
 
@@ -72,7 +71,7 @@ Download crime data for the last year. Map it. Are crimes clustered in wealthy a
 
 5. **FOIA the metadata** — If you find an interesting layer, FOIA the agency for the data dictionary and update schedule. The Python library has a function for extracting the complete metadata in a useful format.
 
-## You don't need GIS software
+## You don't need GIS software or coding skills to use this tool
 
 Just because it's geospatial data doesn't mean you need to map it. The web app exports to **CSV** — open it in Excel, Google Sheets, or R/Python.
 

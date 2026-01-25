@@ -33,17 +33,17 @@ export default function Markdown({ content }: MarkdownProps) {
           </p>
         ),
         ul: ({ children }) => (
-          <ul className="list-disc list-inside text-ink-400 mb-4 space-y-2 ml-2">
+          <ul className="list-disc list-outside text-ink-400 mb-4 space-y-2 ml-6">
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal list-inside text-ink-400 mb-4 space-y-2 ml-2">
+          <ol className="list-decimal list-outside text-ink-400 mb-4 space-y-3 ml-6">
             {children}
           </ol>
         ),
         li: ({ children }) => (
-          <li className="text-ink-400">
+          <li className="text-ink-400 pl-1">
             {children}
           </li>
         ),

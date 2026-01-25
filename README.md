@@ -181,6 +181,29 @@ python examples/01_palm_springs_pools_map.py
 
 This project uses `pytest` for unit testing. For details on how to run the test suite, please see the [testing guide](https://ezesri.com/docs/testing).
 
+## Deploying the Web App
+
+The web app consists of two parts:
+
+### Frontend (Next.js on Vercel)
+
+The frontend auto-deploys to Vercel on push to `main`. No manual steps required.
+
+### Backend (AWS Lambda)
+
+The API backend requires manual deployment via AWS SAM:
+
+```bash
+cd web/lambda
+sam build && sam deploy
+```
+
+Prerequisites:
+- AWS CLI configured with credentials
+- AWS SAM CLI installed (`brew install aws-sam-cli` on Mac)
+
+See `web/lambda/README.md` for more details.
+
 ## Contributing
 
 Contributions are welcome! Please see the [contributing guide](CONTRIBUTING.md) for more information.
