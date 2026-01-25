@@ -17,6 +17,9 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
       setUrl(initialUrl)
     }
   }, [initialUrl])
+
+  // Check if URL is a service-level URL (missing layer ID)
+  const isServiceUrl = /\/(FeatureServer|MapServer)\/?$/i.test(url.trim())
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,16 +30,16 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
   
   const exampleUrls = [
     {
-      label: 'US cities',
-      url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0'
+      label: 'US counties',
+      url: 'https://services2.arcgis.com/FiaPA4ga0iQKduv3/ArcGIS/rest/services/IBTrACS_ALL_list_v04r00_lines_1/FeatureServer/0'
     },
     {
       label: 'North Korea missle ranges',
       url: 'https://services.arcgis.com/hRUr1F8lE8Jq2uJo/ArcGIS/rest/services/NorthKoreaMissiles/FeatureServer/0'
     },
     {
-      label: 'LAPD stations',
-      url: 'https://services5.arcgis.com/7nsPwEMP38bSkCjy/ArcGIS/rest/services/LAPD_Police_Stations/FeatureServer/0'
+      label: 'MLB stadiums',
+      url: 'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/Major_League_Baseball_Stadiums/FeatureServer/0'
     }
   ]
   
@@ -91,6 +94,21 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
           )}
         </button>
       </form>
+
+      {/* Warning for service-level URLs */}
+      {isServiceUrl && (
+        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400">
+          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="font-medium">This looks like a service URL, not a layer URL</p>
+            <p className="text-amber-400/80 mt-1">
+              Add a layer number to the end, like <code className="bg-amber-500/20 px-1 rounded">/FeatureServer/0</code> or <code className="bg-amber-500/20 px-1 rounded">/MapServer/1</code>
+            </p>
+          </div>
+        </div>
+      )}
       
       <div className="flex items-center gap-1 text-sm text-ink-400">
         <span>For example:</span>

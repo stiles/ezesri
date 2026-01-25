@@ -122,7 +122,13 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
       {/* Error message */}
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
-          {error}
+          <p>{error}</p>
+          {error.includes('limit') && (
+            <p className="mt-2 text-red-300">
+              For unlimited extraction, install the Python CLI:{' '}
+              <code className="bg-red-500/20 px-1.5 py-0.5 rounded font-mono text-xs">pip install ezesri</code>
+            </p>
+          )}
         </div>
       )}
       
@@ -135,7 +141,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
           rel="noopener noreferrer"
           className="text-ember-400 hover:text-ember-300 underline underline-offset-2"
         >
-          Try it with a simple API or using a CLI. 
+          Try it the Python client or CLI. 
         </a>
       </p>
     </div>
