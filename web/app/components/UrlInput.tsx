@@ -30,8 +30,8 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
   
   const exampleUrls = [
     {
-      label: 'US counties',
-      url: 'https://services2.arcgis.com/FiaPA4ga0iQKduv3/ArcGIS/rest/services/IBTrACS_ALL_list_v04r00_lines_1/FeatureServer/0'
+      label: 'World cities',
+      url: 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/World_Cities/FeatureServer/0'
     },
     {
       label: 'North Korea missle ranges',
