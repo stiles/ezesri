@@ -14,6 +14,12 @@ const content = `# Tips for journalists
 
 Local governments often publish spatial data to Esri before (or instead of) posting it anywhere else. Their GIS department is sometimes more open than their records office. Here's how to find stories in that data.
 
+## You don't need GIS software or coding skills!
+
+Just because these data sets are geospatial doesn't mean you need to map them. The web app exports to **CSV** — open layers in Excel, Google Sheets or R/Python. 
+
+Point data includes lat/lon columns automatically. For polygons, you still get all the attribute data in a spreadsheet-friendly format.
+
 ## Search the directory
 
 Use the [data directory](/directory) to search by keyword. Try your city or county name plus these terms:
@@ -70,12 +76,6 @@ Download crime data for the last year. Map it. Are crimes clustered in wealthy a
 4. **Compare over time** — Download the same layer monthly. Changes in the data *are* the story.
 
 5. **FOIA the metadata** — If you find an interesting layer, FOIA the agency for the data dictionary and update schedule. The Python library has a function for extracting the complete metadata in a useful format.
-
-## You don't need GIS software or coding skills to use this tool
-
-Just because it's geospatial data doesn't mean you need to map it. The web app exports to **CSV** — open it in Excel, Google Sheets, or R/Python.
-
-Point data includes lat/lon columns automatically. For polygons, you still get all the attribute data in a spreadsheet-friendly format.
 
 ## Need help?
 
