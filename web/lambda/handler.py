@@ -17,8 +17,8 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Feature count limit to prevent timeout on massive layers
-MAX_FEATURES = 50000
+# Feature count limit to prevent timeout/payload issues on massive layers
+MAX_FEATURES = 100000
 
 
 def get_metadata(url: str) -> dict:
@@ -144,8 +144,9 @@ def extract_layer(
     total_features = len(object_ids)
     if total_features > max_features:
         return {
-            "error": f"Layer has {total_features:,} features, which exceeds the limit of {max_features:,}. Please add a filter to reduce the number of features.",
-            "featureCount": total_features
+            "error": f"Layer has {total_features:,} features, which exceeds the web app limit of {max_features:,}. Add a filter to reduce the count, or use the Python CLI for unlimited extraction: pip install ezesri",
+            "featureCount": total_features,
+            "limitExceeded": True
         }
     
     # Fetch features in batches

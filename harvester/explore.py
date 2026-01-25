@@ -366,6 +366,54 @@ SAMPLE_QUERIES = {
         "query": 'type:"Feature Service" AND access:public AND (tags:permits OR tags:"building permits" OR title:permits)',
         "description": "Permits and licensing Feature Services"
     },
+    "parks": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:parks OR tags:recreation OR tags:trails OR title:park)',
+        "description": "Parks, recreation and trails Feature Services"
+    },
+    "weather": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:weather OR tags:climate OR tags:NOAA OR title:weather)',
+        "description": "Weather and climate Feature Services"
+    },
+    "sports": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:sports OR tags:stadium OR tags:athletic OR title:stadium OR title:sports)',
+        "description": "Sports facilities and venues Feature Services"
+    },
+    "agriculture": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:agriculture OR tags:farming OR tags:crops OR tags:USDA)',
+        "description": "Agriculture and farming Feature Services"
+    },
+    "real_estate": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:"real estate" OR tags:property OR tags:sales OR title:assessment)',
+        "description": "Real estate and property Feature Services"
+    },
+    "natural_resources": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:forestry OR tags:forests OR tags:mining OR tags:geology)',
+        "description": "Natural resources Feature Services"
+    },
+    "telecom": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:broadband OR tags:telecommunications OR tags:"cell tower" OR title:broadband)',
+        "description": "Telecommunications and broadband Feature Services"
+    },
+    "energy": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:energy OR tags:solar OR tags:wind OR tags:pipeline OR title:energy)',
+        "description": "Energy infrastructure Feature Services"
+    },
+    "historic": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:historic OR tags:historical OR tags:landmark OR tags:heritage)',
+        "description": "Historic sites and landmarks Feature Services"
+    },
+    "maritime": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:maritime OR tags:coastal OR tags:ports OR tags:marine)',
+        "description": "Maritime and coastal Feature Services"
+    },
+    "wildlife": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:wildlife OR tags:habitat OR tags:species OR tags:conservation)',
+        "description": "Wildlife and conservation Feature Services"
+    },
+    "floods": {
+        "query": 'type:"Feature Service" AND access:public AND (tags:flood OR tags:FEMA OR tags:floodplain OR title:flood)',
+        "description": "Flood zones and hazards Feature Services"
+    },
 }
 
 

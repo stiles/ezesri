@@ -8,7 +8,7 @@ Don't have Python installed? Use the web app at **[ezesri.com](https://ezesri.co
 
 ## Public Data Directory
 
-Browse **8,000+ public ArcGIS Feature Services** from government agencies worldwide at **[ezesri.com/directory](https://ezesri.com/directory)**. Find parcels, zoning, elections, crime data, demographics and more — all searchable and filterable by category.
+Browse **12,000+ public ArcGIS Feature Services** from government agencies worldwide at **[ezesri.com/directory](https://ezesri.com/directory)**. Find parcels, zoning, elections, crime, weather, sports facilities, wildlife data and more — all searchable and filterable by 32 categories.
 
 ## Python package
 
