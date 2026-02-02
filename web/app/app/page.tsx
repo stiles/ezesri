@@ -157,7 +157,7 @@ function HomeContent() {
             <p className="text-sm text-ink-400 max-w-md mx-auto">
               Works with any public ArcGIS FeatureServer or MapServer layer endpoint.
               Look for URLs ending in <code className="text-ember-400/70">/FeatureServer/0</code> or <code className="text-ember-400/70">/MapServer/1</code>, 
-              or browse our <a href="/directory" className="text-ember-400 hover:text-ember-300 transition-colors">directory of 12,000+ public services</a>.
+              or browse our <a href="/directory" className="text-ember-400 hover:text-ember-300 transition-colors">directory of 24,000+ public services</a>.
             </p>
           </div>
         )}
