@@ -419,7 +419,7 @@ SAMPLE_QUERIES = {
 
 def run_exploration(
     query_key: str = "open_data_features",
-    max_results: int = 50,
+    max_results: int = 100,
     enrich: bool = True
 ) -> dict:
     """
@@ -482,50 +482,55 @@ def run_exploration(
     }
 
 
-def main():
-    """Run exploration on multiple queries and save results."""
+def harvest_all_categories(max_results: int = 500, enrich: bool = True) -> dict:
+    """
+    Harvest all categories defined in SAMPLE_QUERIES.
     
-    print("ArcGIS Online Harvester - Proof of Concept")
+    Args:
+        max_results: Maximum results to fetch per category (default: 500)
+        enrich: Whether to fetch service-level metadata (default: True)
+    
+    Returns:
+        Dictionary with all category results
+    """
+    print("ArcGIS Online Portal Exploration Tool")
     print("=" * 60)
-    
-    # Run a few different queries to see what's out there
-    queries_to_run = ["open_data_features", "parcels", "zoning"]
+    print(f"Harvesting {len(SAMPLE_QUERIES)} categories with max {max_results} results each")
+    print("=" * 60)
     
     all_results = {}
     
-    for query_key in queries_to_run:
-        results = run_exploration(query_key, max_results=50, enrich=True)
+    for query_key in SAMPLE_QUERIES.keys():
+        results = run_exploration(query_key, max_results=max_results, enrich=enrich)
         all_results[query_key] = results
         
         # Save individual results
-        filename = f"{query_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filename = f"{query_key}.json"
         path = save_results(results, filename)
-        print(f"\nSaved to: {path}")
+        print(f"Saved to: {path}")
     
     # Save combined results
     combined_path = save_results(
         all_results,
-        f"combined_exploration_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        "all_categories.json"
     )
-    print(f"\nCombined results saved to: {combined_path}")
+    print(f"\n{'='*60}")
+    print(f"Combined results saved to: {combined_path}")
+    print(f"{'='*60}")
     
-    # Print some interesting examples
-    print("\n" + "=" * 60)
-    print("Sample services discovered:")
-    print("=" * 60)
+    return all_results
+
+
+def main():
+    """
+    Run the harvester to collect all categories.
     
-    for query_key, results in all_results.items():
-        print(f"\n--- {results['description']} ---")
-        for item in results["items"][:3]:
-            print(f"\n  Title: {item.get('title')}")
-            print(f"  Owner: {item.get('owner')}")
-            print(f"  URL: {item.get('url')}")
-            print(f"  Views: {item.get('numViews')}")
-            if item.get("service"):
-                layers = item["service"].get("layers", [])
-                print(f"  Layers: {len(layers)}")
-                if layers:
-                    print(f"    - {', '.join(l['name'] for l in layers[:3])}")
+    To change the number of results per category, modify the max_results parameter below.
+    """
+    # CHANGE THIS NUMBER to control how many services are fetched per category
+    MAX_RESULTS_PER_CATEGORY = 1000
+    
+    harvest_all_categories(max_results=MAX_RESULTS_PER_CATEGORY, enrich=True)
 
 
 if __name__ == "__main__":

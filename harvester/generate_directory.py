@@ -14,7 +14,8 @@ from pathlib import Path
 
 OUTPUT_DIR = Path(__file__).parent / "sample_output"
 DIRECTORY_FILE = Path(__file__).parent / "directory.md"
-CATALOG_JSON_FILE = Path(__file__).parent / "catalog.json"
+# Web app catalog location
+CATALOG_JSON_FILE = Path(__file__).parent.parent / "web" / "app" / "public" / "catalog.json"
 
 
 US_STATES = {
