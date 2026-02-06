@@ -29,7 +29,7 @@ export default function Footer() {
               Documentation
             </a>
             <a href="/directory" className="text-ink-400 hover:text-ink-200 transition-colors">
-              Directory
+              Services directory
             </a>
             <a
               href="https://buymeacoffee.com/mattstiles"
@@ -37,7 +37,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="text-ink-400 hover:text-ink-200 transition-colors"
             >
-              Buy me a coffee?
+              Support the project
             </a>
           </nav>
         </div>
