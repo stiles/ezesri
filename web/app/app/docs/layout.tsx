@@ -47,10 +47,7 @@ export default function DocsLayout({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
               </div>
-              <div>
-                <h1 className="text-base sm:text-lg font-semibold text-ink-100">ezesri</h1>
-                <p className="text-xs text-ink-400 hidden sm:block">Extract Esri REST data</p>
-              </div>
+              <h1 className="text-base sm:text-lg font-semibold text-ink-100">ezesri</h1>
             </Link>
           </div>
           <nav className="flex items-center gap-3 sm:gap-6 text-sm">
@@ -117,7 +114,7 @@ export default function DocsLayout({
                   className={`
                     block px-3 py-2 rounded-lg text-sm transition-colors
                     ${isActive 
-                      ? 'bg-ember-600/20 text-ember-300 border-l-2 border-ember-500' 
+                      ? 'bg-ember-600/10 text-ember-300 font-medium' 
                       : 'text-ink-400 hover:text-ink-200 hover:bg-ink-800/50'
                     }
                   `}

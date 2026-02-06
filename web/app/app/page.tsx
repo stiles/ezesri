@@ -36,14 +36,14 @@ function HomeContent() {
       const data = await fetchMetadata(inputUrl)
       setMetadata(data)
       
-      // Fetch sample values in background for string/text fields
-      const textFields = data.fields
-        .filter(f => f.type === 'String' || f.type === 'esriFieldTypeString')
-        .slice(0, 10)
+      // Fetch sample values in background for string and numeric fields
+      const sampleFields = data.fields
+        .filter(f => !['esriFieldTypeOID', 'esriFieldTypeGlobalID', 'OID', 'GlobalID'].includes(f.type))
+        .slice(0, 15)
         .map(f => f.name)
       
-      if (textFields.length > 0) {
-        fetchSampleValues(inputUrl, textFields).then(samples => {
+      if (sampleFields.length > 0) {
+        fetchSampleValues(inputUrl, sampleFields).then(samples => {
           if (Object.keys(samples).length > 0) {
             setMetadata(prev => prev ? { ...prev, sampleValues: samples } : prev)
           }
@@ -76,12 +76,15 @@ function HomeContent() {
             Unlock GIS data from Esri REST services
           </h2>
           <p className="text-ink-400 max-w-2xl mx-auto">
-            Paste any ArcGIS feature layer or map server URL. Get metadata, apply filters and export to GeoJSON. No installation needed.
+            Paste any ArcGIS feature layer or map server URL. Get metadata, apply filters and export to GeoJSON or CSV. No installation or code needed.
           </p>
         </div>
         
         {/* URL Input */}
         <div className="mb-8">
+          <p className="text-sm text-ink-400 mb-3">
+            Enter a layer URL to get started. Hint: look for URLs ending in <code className="text-ember-400/70">/FeatureServer/0</code> or <code className="text-ember-400/70">/MapServer/1</code>
+          </p>
           <UrlInput onFetch={handleFetch} isLoading={isLoading} initialUrl={urlParam || undefined} />
         </div>
         
@@ -147,18 +150,63 @@ function HomeContent() {
         
         {/* Empty state */}
         {!metadata && !isLoading && !error && (
-          <div className="text-center py-8">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-ink-900/50 flex items-center justify-center">
-              <svg className="w-7 h-7 text-ink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-ink-300 mb-2">Paste a layer URL to get started</h3>
-            <p className="text-sm text-ink-400 max-w-md mx-auto">
-              Works with any public ArcGIS FeatureServer or MapServer layer endpoint.
-              Look for URLs ending in <code className="text-ember-400/70">/FeatureServer/0</code> or <code className="text-ember-400/70">/MapServer/1</code>, 
-              or browse our <a href="/directory" className="text-ember-400 hover:text-ember-300 transition-colors">directory of 24,000+ public services</a>.
-            </p>
+          <div className="space-y-3">
+            {/* Directory callout */}
+            <a
+              href="/directory"
+              className="block max-w-xl mx-auto mt-4 p-5 rounded-xl border border-ink-800 bg-ink-900/30 hover:border-ember-500/40 hover:bg-ink-900/50 transition-all group"
+            >
+              <div className="flex items-center gap-5">
+                {/* Dot cluster — abstract map points */}
+                <div className="flex-shrink-0 w-14 h-14 relative" aria-hidden="true">
+                  <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                    <circle cx="14" cy="20" r="4" className="fill-ember-500/70" />
+                    <circle cx="32" cy="12" r="3" className="fill-ember-400/50" />
+                    <circle cx="44" cy="28" r="5" className="fill-ember-500/60" />
+                    <circle cx="22" cy="38" r="3.5" className="fill-ember-400/40" />
+                    <circle cx="38" cy="44" r="2.5" className="fill-ember-500/50" />
+                    <circle cx="10" cy="44" r="2" className="fill-ember-400/30" />
+                    <circle cx="48" cy="14" r="2" className="fill-ember-500/40" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-200 group-hover:text-ink-100 transition-colors">
+                    Don&apos;t have a URL handy?
+                  </p>
+                  <p className="text-sm text-ink-400 mt-0.5">
+                    Browse 24,000+ public services across 30+ categories.
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-ink-600 group-hover:text-ember-400 flex-shrink-0 transition-colors ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </a>
+
+            {/* CLI nudge */}
+            <a
+              href="/docs/installation"
+              className="block max-w-xl mx-auto p-5 rounded-xl border border-ink-800 bg-ink-900/30 hover:border-ember-500/40 hover:bg-ink-900/50 transition-all group"
+            >
+              <div className="flex items-center gap-5">
+                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-ink-800/40 flex items-center justify-center" aria-hidden="true">
+                  <svg className="w-7 h-7 text-ink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-200 group-hover:text-ink-100 transition-colors">
+                    Prefer the command line?
+                  </p>
+                  <p className="text-sm text-ink-400 mt-0.5">
+                    <code className="font-mono text-ember-400/80">pip install ezesri</code> for more formats and scripting support.
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-ink-600 group-hover:text-ember-400 flex-shrink-0 transition-colors ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </a>
           </div>
         )}
       </div>

@@ -44,7 +44,7 @@ export default function UrlInput({ onFetch, isLoading, initialUrl }: UrlInputPro
   ]
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <form onSubmit={handleSubmit} className="flex gap-3">
         <div className="flex-1 relative">
           <input

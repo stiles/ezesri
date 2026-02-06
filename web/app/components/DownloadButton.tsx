@@ -43,18 +43,26 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
     }
   }
   
-  const formats: { value: Format; label: string; icon: string; disabled: boolean; description: string }[] = [
+  const formats: { value: Format; label: string; icon: React.ReactNode; disabled: boolean; description: string }[] = [
     { 
       value: 'geojson', 
       label: 'GeoJSON', 
-      icon: '{ }',
+      icon: <span className="font-mono text-sm">{'{ }'}</span>,
       disabled: false,
       description: 'For mapping'
     },
     { 
       value: 'csv', 
       label: 'CSV', 
-      icon: '📊',
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <line x1="1" y1="4" x2="19" y2="4" />
+          <line x1="1" y1="10" x2="19" y2="10" />
+          <line x1="1" y1="16" x2="19" y2="16" />
+          <line x1="7" y1="1" x2="7" y2="19" />
+          <line x1="13" y1="1" x2="13" y2="19" />
+        </svg>
+      ),
       disabled: false,
       description: 'For spreadsheets'
     },
@@ -62,7 +70,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
   
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-ink-300">Export Format</h3>
+      <h3 className="text-sm font-medium text-ink-300">Export format</h3>
       
       {/* Format selector */}
       <div className="flex gap-3">
@@ -72,7 +80,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
             onClick={() => setFormat(f.value)}
             disabled={f.disabled}
             className={`
-              flex-1 px-4 py-3 rounded-lg border transition-all
+              flex-1 px-4 py-3 rounded-lg border transition-all text-center
               ${format === f.value 
                 ? 'bg-ember-600/20 border-ember-500/50 text-ember-300' 
                 : 'bg-ink-900/30 border-ink-700 text-ink-400 hover:border-ink-600'
@@ -80,7 +88,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
               ${f.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             `}
           >
-            <div className="text-lg">{f.icon}</div>
+            <div className="text-lg flex justify-center">{f.icon}</div>
             <div className="text-sm mt-1 font-medium">{f.label}</div>
             <div className="text-xs text-ink-500 mt-0.5">{f.description}</div>
           </button>

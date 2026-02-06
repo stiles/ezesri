@@ -145,7 +145,7 @@ export default function DirectoryPage() {
         {/* Hero section */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-ink-100 mb-4">
-            Public GIS Data Directory
+            Public GIS data directory
           </h2>
           <p className="text-ink-400 max-w-2xl mx-auto mb-8">
             Browse thousands of public ArcGIS Feature Services from government agencies worldwide.

@@ -84,7 +84,7 @@ export default function MetadataPanel({ metadata }: MetadataPanelProps) {
       <div>
         <h3 className="text-sm font-medium text-ink-300 mb-3">Fields</h3>
         <div className="bg-ink-900/30 rounded-lg border border-ink-800 overflow-hidden">
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-[28rem] overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="bg-ink-900/50 sticky top-0">
                 <tr>
@@ -96,6 +96,7 @@ export default function MetadataPanel({ metadata }: MetadataPanelProps) {
               <tbody className="divide-y divide-ink-800">
                 {metadata.fields.map((field, i) => {
                   const samples = metadata.sampleValues?.[field.name]
+                  const isNumeric = ['Double', 'Integer', 'SmallInteger', 'Single', 'esriFieldTypeDouble', 'esriFieldTypeInteger', 'esriFieldTypeSmallInteger', 'esriFieldTypeSingle'].includes(field.type)
                   return (
                     <tr key={i} className="hover:bg-ink-800/30 transition-colors">
                       <td className="px-4 py-2 font-mono text-ink-200">{field.name}</td>
@@ -106,7 +107,7 @@ export default function MetadataPanel({ metadata }: MetadataPanelProps) {
                             {samples.map((v, j) => (
                               <span key={j}>
                                 {j > 0 && <span className="text-ink-600">, </span>}
-                                &quot;{v.length > 20 ? v.slice(0, 20) + '…' : v}&quot;
+                                {isNumeric ? v : <>&quot;{v.length > 20 ? v.slice(0, 20) + '…' : v}&quot;</>}
                               </span>
                             ))}
                           </span>
