@@ -16,7 +16,7 @@ Local governments often publish spatial data to Esri before (or instead of) post
 
 ## You don't need GIS software or coding skills!
 
-Just because these data sets are geospatial doesn't mean you need to map them. The web app exports to **CSV** — open layers in Excel, Google Sheets or R/Python. 
+Just because these data sets are geospatial doesn't mean you need to map them. The web app exports to **CSV**, so you can open layers in Excel, Google Sheets or R/Python. 
 
 Point data includes lat/lon columns automatically. For polygons, you still get all the attribute data in a spreadsheet-friendly format.
 

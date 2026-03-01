@@ -401,6 +401,7 @@ function GetStarted() {
           { label: 'Install', value: 'pip install ezesri', href: null },
           { label: 'Docs', value: 'ezesri.com/docs', href: 'https://ezesri.com/docs' },
           { label: 'Source', value: 'github.com/stiles/ezesri', href: 'https://github.com/stiles/ezesri' },
+          { label: 'Journalist tips', value: 'ezesri.com/docs/journalists', href: 'https://www.ezesri.com/docs/journalists' },
         ].map((item) => (
           <div key={item.label} className="p-5 rounded-xl bg-ink-900/40 border border-ink-800">
             <p className="text-sm text-ink-500 mb-1">{item.label}</p>
