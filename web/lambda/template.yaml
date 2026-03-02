@@ -5,7 +5,7 @@ Description: ezesri Web API - Extract data from Esri REST services
 Globals:
   Function:
     Timeout: 29  # API Gateway max timeout
-    MemorySize: 1024
+    MemorySize: 3008  # More memory = faster CPU
     Runtime: python3.11
 
 Resources:
