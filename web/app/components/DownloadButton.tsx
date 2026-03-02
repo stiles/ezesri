@@ -159,7 +159,7 @@ export default function DownloadButton({ url, metadata, where, bbox }: DownloadB
           rel="noopener noreferrer"
           className="text-ember-400 hover:text-ember-300 underline underline-offset-2"
         >
-          Try it the Python client or CLI. 
+          Try the Python client or CLI. 
         </a>
       </p>
     </div>
