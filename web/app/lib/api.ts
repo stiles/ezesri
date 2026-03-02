@@ -116,17 +116,36 @@ export async function extractLayer(params: ExtractParams): Promise<{ blob: Blob;
     body: formData.toString(),
   })
   
-  // Check content type to determine if it's an error
+  // Check content type to determine if it's an error or presigned URL
   const contentType = response.headers.get('content-type') || ''
   
-  if (contentType.includes('application/json') || contentType.includes('application/geo+json')) {
+  // Check if response is JSON (could be error or presigned URL)
+  if (contentType.includes('application/json')) {
     const data = await response.json()
     
     if (data.error) {
       throw new Error(data.error)
     }
     
-    // GeoJSON response - convert to blob
+    // Check if it's a presigned URL response
+    if (data.downloadUrl) {
+      // Download from presigned URL
+      const downloadResponse = await fetch(data.downloadUrl)
+      if (!downloadResponse.ok) {
+        throw new Error('Failed to download file from storage')
+      }
+      const blob = await downloadResponse.blob()
+      return { blob, filename: data.filename || 'export.geojson' }
+    }
+    
+    // Direct GeoJSON response - convert to blob
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/geo+json' })
+    return { blob, filename: 'export.geojson' }
+  }
+  
+  if (contentType.includes('application/geo+json')) {
+    // Direct GeoJSON response
+    const data = await response.json()
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/geo+json' })
     return { blob, filename: 'export.geojson' }
   }

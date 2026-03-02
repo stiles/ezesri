@@ -9,6 +9,30 @@ Globals:
     Runtime: python3.11
 
 Resources:
+  ExportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "ezesri-exports-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldExports
+            Status: Enabled
+            ExpirationInDays: 1
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedHeaders: ['*']
+            MaxAge: 3600
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: ezesri
+
   ExtractFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -17,6 +41,12 @@ Resources:
       Description: ezesri web API for extracting Esri REST data
       Layers:
         - arn:aws:lambda:us-west-2:399949164916:layer:shapely-python311:1
+      Environment:
+        Variables:
+          EXPORT_BUCKET: !Ref ExportBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ExportBucket
       Events:
         MetadataApi:
           Type: Api
@@ -24,17 +54,35 @@ Resources:
             Path: /metadata
             Method: get
             RestApiId: !Ref EzesriApi
+        MetadataOptions:
+          Type: Api
+          Properties:
+            Path: /metadata
+            Method: options
+            RestApiId: !Ref EzesriApi
         ExtractApi:
           Type: Api
           Properties:
             Path: /extract
             Method: post
             RestApiId: !Ref EzesriApi
+        ExtractOptions:
+          Type: Api
+          Properties:
+            Path: /extract
+            Method: options
+            RestApiId: !Ref EzesriApi
         RootApi:
           Type: Api
           Properties:
             Path: /
             Method: get
+            RestApiId: !Ref EzesriApi
+        RootOptions:
+          Type: Api
+          Properties:
+            Path: /
+            Method: options
             RestApiId: !Ref EzesriApi
       Tags:
         Project: ezesri

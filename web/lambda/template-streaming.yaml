@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ezesri Web API with streaming response support
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 3008
+    Runtime: python3.11
+
+Resources:
+  ExtractFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handler.lambda_handler
+      Description: ezesri web API with streaming for large responses
+      Layers:
+        - arn:aws:lambda:us-west-2:399949164916:layer:shapely-python311:1
+      FunctionUrlConfig:
+        AuthType: NONE
+        InvokeMode: RESPONSE_STREAM
+        Cors:
+          AllowOrigins: ['*']
+          AllowMethods: [GET, POST, OPTIONS]
+          AllowHeaders: ['Content-Type', 'Content-Length']
+          ExposeHeaders: ['Content-Type', 'Content-Disposition']
+          MaxAge: 3600
+      Tags:
+        Project: ezesri
+
+Outputs:
+  FunctionUrl:
+    Description: Lambda Function URL (with streaming)
+    Value: !GetAtt ExtractFunctionUrl.FunctionUrl
+  
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt ExtractFunction.Arn

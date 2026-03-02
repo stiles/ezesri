@@ -10,9 +10,12 @@ import io
 import json
 import logging
 import base64
+import os
+import uuid
 from typing import Dict, Any, Optional
 from urllib.parse import parse_qs, urlparse
 
+import boto3
 import requests
 
 # Configure logging
@@ -21,6 +24,13 @@ logger.setLevel(logging.INFO)
 
 # Feature count limit to prevent timeout/payload issues on massive layers
 MAX_FEATURES = 100000
+
+# S3 configuration
+s3_client = boto3.client('s3')
+EXPORT_BUCKET = os.environ.get('EXPORT_BUCKET')
+
+# Size threshold for using S3 (1MB) - responses larger than this go to S3
+S3_THRESHOLD_BYTES = 1024 * 1024
 
 
 def geojson_to_csv(geojson: dict) -> str:
@@ -312,28 +322,79 @@ def handle_extract(params: dict) -> Dict[str, Any]:
             "body": result
         }
     
-    # Return based on format
+    # Prepare response content based on format
+    if format_type == 'geojson':
+        content = json.dumps(result)
+        content_type = "application/geo+json"
+        filename = "export.geojson"
+    elif format_type == 'csv':
+        content = geojson_to_csv(result)
+        content_type = "text/csv"
+        filename = "export.csv"
+    else:
+        return {
+            "statusCode": 400,
+            "body": {"error": f"Format '{format_type}' is not yet supported. Available formats: geojson, csv"}
+        }
+    
+    content_bytes = content.encode('utf-8')
+    content_size = len(content_bytes)
+    
+    # If response is large, upload to S3 and return presigned URL
+    if content_size > S3_THRESHOLD_BYTES and EXPORT_BUCKET:
+        try:
+            # Generate unique filename
+            export_id = str(uuid.uuid4())
+            s3_key = f"exports/{export_id}/{filename}"
+            
+            # Upload to S3
+            s3_client.put_object(
+                Bucket=EXPORT_BUCKET,
+                Key=s3_key,
+                Body=content_bytes,
+                ContentType=content_type,
+                ContentDisposition=f'attachment; filename="{filename}"'
+            )
+            
+            # Generate presigned URL (valid for 15 minutes)
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': EXPORT_BUCKET, 'Key': s3_key},
+                ExpiresIn=900
+            )
+            
+            logger.info(f"Uploaded {content_size} bytes to S3, returning presigned URL")
+            
+            return {
+                "statusCode": 200,
+                "body": {
+                    "downloadUrl": presigned_url,
+                    "filename": filename,
+                    "size": content_size,
+                    "expiresIn": 900
+                },
+                "contentType": "application/json"
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to upload to S3: {e}")
+            # Fall through to direct response if S3 fails
+    
+    # Return directly for small responses
     if format_type == 'geojson':
         return {
             "statusCode": 200,
             "body": result,
             "contentType": "application/geo+json",
-            "filename": "export.geojson"
+            "filename": filename
         }
-    elif format_type == 'csv':
-        csv_data = geojson_to_csv(result)
+    else:  # CSV
         return {
             "statusCode": 200,
-            "body": csv_data,
+            "body": content,
             "contentType": "text/csv",
-            "filename": "export.csv",
-            "isRaw": True  # Signal that body is already a string, not JSON
-        }
-    else:
-        # Shapefile and GeoParquet require geopandas which needs a container deployment
-        return {
-            "statusCode": 400,
-            "body": {"error": f"Format '{format_type}' is not yet supported. Available formats: geojson, csv"}
+            "filename": filename,
+            "isRaw": True
         }
 
 
@@ -367,6 +428,18 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             http_info = request_context.get('http', {})
             method = http_info.get('method', 'GET')
             path = http_info.get('path', '/')
+        
+        # Handle OPTIONS preflight requests for CORS
+        if method == 'OPTIONS':
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type",
+                },
+                "body": ""
+            }
         
         # Parse query parameters
         query_params = event.get('queryStringParameters') or {}

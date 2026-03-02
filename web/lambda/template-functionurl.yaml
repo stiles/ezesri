@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ezesri Web API - Extract data from Esri REST services (Function URL version)
+
+Globals:
+  Function:
+    Timeout: 300  # 5 minutes for large datasets
+    MemorySize: 2048
+    Runtime: python3.11
+
+Resources:
+  ExtractFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handler.lambda_handler
+      Description: ezesri web API for extracting Esri REST data
+      Layers:
+        - arn:aws:lambda:us-west-2:399949164916:layer:shapely-python311:1
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ['*']
+          AllowMethods: [GET, POST, OPTIONS]
+          AllowHeaders: ['Content-Type']
+          MaxAge: 3600
+      Tags:
+        Project: ezesri
+
+Outputs:
+  FunctionUrl:
+    Description: Lambda Function URL
+    Value: !GetAtt ExtractFunctionUrl.FunctionUrl
+  
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt ExtractFunction.Arn
