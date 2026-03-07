@@ -13,7 +13,15 @@ NICAR 2026
 
 ---
 
-## Slide 2: The problem
+## Slide 2: Palm Springs pool
+
+[full-screen image: palm-springs-pool.png]
+
+Caption: "Palm Springs, last summer"
+
+---
+
+## Slide 3: The problem
 
 Thousands of government agencies publish geospatial data through Esri ArcGIS REST services.
 
@@ -23,7 +31,17 @@ Getting that data out? That's the hard part.
 
 ---
 
-## Slide 3: You've seen this before
+## Slide 4: Before ezesri
+
+[full-screen: one-off-script-example.png]
+
+I was writing one-off extraction scripts for every project
+
+A script I wrote for an LA trees project — 53 lines just to download one layer
+
+---
+
+## Slide 4: You've seen this before
 
 [full-screen: noaa_wildfires.png]
 
@@ -39,7 +57,27 @@ Johns Hopkins measles case tracker -- powered by Esri ArcGIS
 
 ---
 
-## Slide 5: Audience check
+## Slide 5: What you actually see (1)
+
+[full-screen: ezesri-mlb-1.png]
+
+This is what an Esri REST endpoint looks like
+
+MLB stadiums layer -- service metadata
+
+---
+
+## Slide 6: What you actually see (2)
+
+[full-screen: ezesri-mlb-2.png]
+
+Not exactly user-friendly
+
+Field definitions -- JSON formatting, SQL types, technical metadata
+
+---
+
+## Slide 7: Audience check
 
 Quick show of hands:
 
@@ -49,7 +87,7 @@ How did that go?
 
 ---
 
-## Slide 6: The existing options
+## Slide 8: The existing options
 
 | Tool | Downside |
 |------|----------|

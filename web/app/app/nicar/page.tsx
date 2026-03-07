@@ -9,6 +9,21 @@ interface Slide {
   content: React.ReactNode
 }
 
+function PalmSpringsPool() {
+  return (
+    <div className="flex flex-col items-center justify-center w-full max-w-6xl pb-16">
+      <div className="rounded-xl overflow-hidden shadow-2xl max-h-[70vh]">
+        <img
+          src="/palm-springs-pool.png"
+          alt="Swimming pool in Palm Springs"
+          className="w-full h-auto"
+        />
+      </div>
+      <p className="text-xl text-ink-400 mt-6 text-center max-w-2xl">Palm Springs, last summer</p>
+    </div>
+  )
+}
+
 function Title() {
   return (
     <div className="flex flex-col items-center justify-center text-center">
@@ -57,34 +72,91 @@ function TheProblem() {
   )
 }
 
+function OneOffScript() {
+  return (
+    <div className="flex flex-col items-center justify-center w-full max-w-6xl pb-16">
+      <p className="text-sm font-medium text-ember-400 uppercase tracking-wider mb-6">Before ezesri</p>
+      <h2 className="text-3xl sm:text-4xl font-bold text-ink-100 mb-6 leading-tight text-center">
+        I was writing one-off extraction scripts for every project
+      </h2>
+      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl max-h-[60vh]">
+        <img
+          src="/one-off-script-example.png"
+          alt="GitHub repository showing fetch_esri_service.py - a custom one-off extraction script"
+          className="w-full h-auto"
+        />
+      </div>
+      <p className="text-lg text-ink-500 mt-4">A script I wrote for an LA trees project &mdash; 53 lines just to download one layer</p>
+    </div>
+  )
+}
+
 function SeenThisWildfires() {
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-6xl">
+    <div className="flex flex-col items-center justify-center w-full max-w-6xl pb-16">
       <p className="text-sm font-medium text-ember-400 uppercase tracking-wider mb-6">You&apos;ve seen this before</p>
-      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl">
+      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl max-h-[70vh]">
         <img
           src="/noaa_wildfires.png"
           alt="NOAA / USGS wildfire map powered by Esri ArcGIS"
           className="w-full h-auto"
         />
       </div>
-      <p className="text-lg text-ink-500 mt-6">NOAA / USGS wildfire map &mdash; powered by Esri ArcGIS</p>
+      <p className="text-lg text-ink-500 mt-4">NOAA / USGS wildfire map &mdash; powered by Esri ArcGIS</p>
     </div>
   )
 }
 
 function SeenThisMeasles() {
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-6xl">
+    <div className="flex flex-col items-center justify-center w-full max-w-6xl pb-16">
       <p className="text-sm font-medium text-ember-400 uppercase tracking-wider mb-6">You&apos;ve seen this too</p>
-      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl">
+      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl max-h-[70vh]">
         <img
           src="/johns_hopkins_measles.png"
           alt="Johns Hopkins measles case tracker powered by Esri ArcGIS"
           className="w-full h-auto"
         />
       </div>
-      <p className="text-lg text-ink-500 mt-6">Johns Hopkins measles case tracker &mdash; powered by Esri ArcGIS</p>
+      <p className="text-lg text-ink-500 mt-4">Johns Hopkins measles case tracker &mdash; powered by Esri ArcGIS</p>
+    </div>
+  )
+}
+
+function RawEsriPage1() {
+  return (
+    <div className="flex flex-col items-center justify-center w-full max-w-6xl pb-16">
+      <p className="text-sm font-medium text-ember-400 uppercase tracking-wider mb-6">What you actually see</p>
+      <h2 className="text-3xl sm:text-4xl font-bold text-ink-100 mb-6 leading-tight text-center">
+        This is what an Esri REST endpoint looks like
+      </h2>
+      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl bg-white max-h-[60vh]">
+        <img
+          src="/ezesri-mlb-1.png"
+          alt="Raw Esri REST API page showing MLB stadiums layer metadata"
+          className="w-full h-auto"
+        />
+      </div>
+      <p className="text-lg text-ink-500 mt-4">MLB stadiums layer &mdash; service metadata</p>
+    </div>
+  )
+}
+
+function RawEsriPage2() {
+  return (
+    <div className="flex flex-col items-center justify-center w-full max-w-6xl pb-16">
+      <p className="text-sm font-medium text-ember-400 uppercase tracking-wider mb-6">The fields</p>
+      <h2 className="text-3xl sm:text-4xl font-bold text-ink-100 mb-6 leading-tight text-center">
+        Not exactly user-friendly
+      </h2>
+      <div className="rounded-xl border border-ink-800 overflow-hidden shadow-2xl bg-white max-h-[60vh]">
+        <img
+          src="/ezesri-mlb-2.png"
+          alt="Raw Esri REST API page showing field definitions"
+          className="w-full h-auto"
+        />
+      </div>
+      <p className="text-lg text-ink-500 mt-4">Field definitions &mdash; JSON formatting, SQL types, technical metadata</p>
     </div>
   )
 }
@@ -452,9 +524,13 @@ function Questions() {
 
 const slides: Slide[] = [
   { id: 'title', content: <Title /> },
+  { id: 'palm-springs', content: <PalmSpringsPool /> },
   { id: 'problem', content: <TheProblem /> },
+  { id: 'one-off-script', content: <OneOffScript /> },
   { id: 'seen-wildfires', content: <SeenThisWildfires /> },
   { id: 'seen-measles', content: <SeenThisMeasles /> },
+  { id: 'raw-esri-1', content: <RawEsriPage1 /> },
+  { id: 'raw-esri-2', content: <RawEsriPage2 /> },
   { id: 'audience', content: <AudienceCheck /> },
   { id: 'options', content: <ExistingOptions /> },
   { id: 'what', content: <WhatIsEzesri /> },
