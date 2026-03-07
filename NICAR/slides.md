@@ -31,16 +31,6 @@ Getting that data out? That's the hard part.
 
 ---
 
-## Slide 4: Before ezesri
-
-[full-screen: one-off-script-example.png]
-
-I was writing one-off extraction scripts for every project
-
-A script I wrote for an LA trees project — 53 lines just to download one layer
-
----
-
 ## Slide 4: You've seen this before
 
 [full-screen: noaa_wildfires.png]
@@ -49,7 +39,7 @@ NOAA / USGS wildfire map -- powered by Esri ArcGIS
 
 ---
 
-## Slide 4: You've seen this too
+## Slide 5: You've seen this too
 
 [full-screen: johns_hopkins_measles.png]
 
@@ -57,7 +47,7 @@ Johns Hopkins measles case tracker -- powered by Esri ArcGIS
 
 ---
 
-## Slide 5: What you actually see (1)
+## Slide 6: What you actually see (1)
 
 [full-screen: ezesri-mlb-1.png]
 
@@ -67,7 +57,7 @@ MLB stadiums layer -- service metadata
 
 ---
 
-## Slide 6: What you actually see (2)
+## Slide 7: What you actually see (2)
 
 [full-screen: ezesri-mlb-2.png]
 
@@ -77,7 +67,17 @@ Field definitions -- JSON formatting, SQL types, technical metadata
 
 ---
 
-## Slide 7: Audience check
+## Slide 8: Before ezesri
+
+[full-screen: one-off-script-example.png]
+
+I was writing one-off extraction scripts for every project
+
+A script I wrote for an LA trees project — 53 lines just to download one layer
+
+---
+
+## Slide 9: Audience check
 
 Quick show of hands:
 

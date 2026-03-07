@@ -38,10 +38,11 @@ def metadata(url, as_json):
 @click.argument('url')
 @click.option('--out', '-o', '--output', help="Output file path (e.g., 'data.geojson').")
 @click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson'], case_sensitive=False), help="Output format.")
+@click.option('--where', '-w', help="SQL WHERE clause for filtering (e.g., \"State = 'CA'\").")
 @click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
 @click.option('--spatial-rel', '--srs', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
-def fetch(url, out, format, bbox, geometry, spatial_rel):
+def fetch(url, out, format, where, bbox, geometry, spatial_rel):
     """
     Extracts a layer and saves it to a file or prints it to the console.
     """
@@ -83,7 +84,7 @@ def fetch(url, out, format, bbox, geometry, spatial_rel):
             raise click.UsageError(f"Invalid geometry input. Must be a valid GeoJSON file or string. Error: {e}")
 
     click.echo(f"Fetching layer from {url}...")
-    gdf = extract_layer(url, bbox=bbox_tuple, geometry=geometry_filter, spatial_rel=spatial_rel)
+    gdf = extract_layer(url, where=where, bbox=bbox_tuple, geometry=geometry_filter, spatial_rel=spatial_rel)
 
     if gdf.empty:
         click.echo("Could not extract layer or layer is empty.", err=True)
