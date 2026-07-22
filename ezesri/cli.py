@@ -1,6 +1,6 @@
 import click
 import json
-from . import get_metadata, extract_layer, bulk_export, summarize_metadata
+from . import get_metadata, extract_layer, bulk_export, summarize_metadata, EsriLayerError
 import geopandas as gpd
 import warnings
 from .utils import truncate_field_names, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types, write_ndjson
@@ -28,6 +28,16 @@ def metadata(url, as_json):
         click.echo("Could not fetch metadata.", err=True)
         return
 
+    if 'error' in data:
+        err = data['error'] or {}
+        click.echo(
+            f"Esri metadata error: code={err.get('code')} message={err.get('message')}",
+            err=True,
+        )
+        if as_json:
+            click.echo(json.dumps(data, indent=2))
+        raise SystemExit(1)
+
     if as_json:
         click.echo(json.dumps(data, indent=2))
     else:
@@ -42,7 +52,8 @@ def metadata(url, as_json):
 @click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
 @click.option('--spatial-rel', '--srs', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
-def fetch(url, out, format, where, bbox, geometry, spatial_rel):
+@click.option('--batch-size', type=int, default=None, help="Features per request (default: min of server maxRecordCount and 1000).")
+def fetch(url, out, format, where, bbox, geometry, spatial_rel, batch_size):
     """
     Extracts a layer and saves it to a file or prints it to the console.
     """
@@ -84,7 +95,17 @@ def fetch(url, out, format, where, bbox, geometry, spatial_rel):
             raise click.UsageError(f"Invalid geometry input. Must be a valid GeoJSON file or string. Error: {e}")
 
     click.echo(f"Fetching layer from {url}...")
-    gdf = extract_layer(url, where=where, bbox=bbox_tuple, geometry=geometry_filter, spatial_rel=spatial_rel)
+    try:
+        gdf = extract_layer(
+            url,
+            where=where,
+            bbox=bbox_tuple,
+            geometry=geometry_filter,
+            spatial_rel=spatial_rel,
+            batch_size=batch_size,
+        )
+    except EsriLayerError as e:
+        raise click.ClickException(str(e))
 
     if gdf.empty:
         click.echo("Could not extract layer or layer is empty.", err=True)
