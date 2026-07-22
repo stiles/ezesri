@@ -74,4 +74,51 @@ def test_extract_layer_with_bbox(mocker):
     assert len(gdf) == 1
     # Check that the bbox was passed to the query
     assert 'geometry' in mock_make_request.call_args_list[0].kwargs['params']
-    assert mock_make_request.call_args_list[0].kwargs['params']['geometry'] == '-1,-1,1,1' 
+    assert mock_make_request.call_args_list[0].kwargs['params']['geometry'] == '-1,-1,1,1'
+
+
+def test_extract_layer_pages_object_ids_past_transfer_limit(mocker):
+    """Pages returnIdsOnly when the server sets exceededTransferLimit."""
+    mocker.patch(
+        'ezesri.extract.get_metadata',
+        return_value={
+            'geometryType': 'esriGeometryPolygon',
+            'maxRecordCount': 2,
+            'objectIdField': 'OBJECTID',
+        },
+    )
+
+    oid_page_1 = {
+        'objectIds': [1, 2, 3],
+        'exceededTransferLimit': True,
+    }
+    oid_page_2 = {
+        'objectIds': [4, 5],
+        'exceededTransferLimit': False,
+    }
+    feature_responses = [
+        {'features': [
+            {'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [0, 0]}, 'properties': {'id': 1}},
+            {'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [1, 1]}, 'properties': {'id': 2}},
+        ]},
+        {'features': [
+            {'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [2, 2]}, 'properties': {'id': 3}},
+            {'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [3, 3]}, 'properties': {'id': 4}},
+        ]},
+        {'features': [
+            {'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [4, 4]}, 'properties': {'id': 5}},
+        ]},
+    ]
+
+    responses = [oid_page_1, oid_page_2, *feature_responses]
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.side_effect = responses
+
+    gdf = extract_layer(URL)
+
+    assert len(gdf) == 5
+    first_oid_params = mock_make_request.call_args_list[0].kwargs['params']
+    second_oid_params = mock_make_request.call_args_list[1].kwargs['params']
+    assert first_oid_params['orderByFields'] == 'OBJECTID ASC'
+    assert 'resultOffset' not in first_oid_params
+    assert second_oid_params['resultOffset'] == 3

@@ -65,6 +65,74 @@ def summarize_metadata(metadata: dict) -> str:
             
     return "\n".join(summary)
 
+def _fetch_all_object_ids(url: str, query_params: dict, oid_field: str = 'OBJECTID') -> list:
+    """Fetch all matching object IDs, paging past ArcGIS transfer limits.
+
+    Hosted Feature Services often cap a single ``returnIdsOnly`` response at
+    1,000,000 IDs and set ``exceededTransferLimit``. Subsequent pages use
+    ``resultOffset`` with a stable ``orderByFields`` so IDs are not skipped or
+    duplicated.
+    """
+    all_ids = []
+    offset = 0
+
+    while True:
+        params = dict(query_params)
+        params.update({
+            'f': 'json',
+            'returnIdsOnly': 'true',
+            'orderByFields': f'{oid_field} ASC',
+        })
+        if offset:
+            params['resultOffset'] = offset
+
+        try:
+            r = make_request(f"{url}/query", params=params)
+            data = r.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to get object IDs from {url}. Error: {e}")
+            return []
+
+        if 'error' in data:
+            # Some older services reject orderByFields / resultOffset on
+            # returnIdsOnly. Retry once without them when still on page one.
+            if offset == 0 and all_ids == []:
+                try:
+                    r = make_request(f"{url}/query", params=query_params)
+                    data = r.json()
+                except requests.exceptions.RequestException as e:
+                    print(f"Failed to get object IDs from {url}. Error: {e}")
+                    return []
+                if 'error' in data:
+                    print(f"Could not get Object IDs for {url}. Server response: {data['error']}")
+                    return []
+                ids = data.get('objectIds') or []
+                if data.get('exceededTransferLimit'):
+                    print(
+                        f"Warning: Object ID query for {url} hit the server transfer "
+                        f"limit ({len(ids)} IDs). This service does not support paging "
+                        "ID queries, so some features may be missing."
+                    )
+                return ids
+
+            print(f"Could not get Object IDs for {url}. Server response: {data['error']}")
+            return []
+
+        ids = data.get('objectIds') or []
+        if not ids:
+            break
+
+        all_ids.extend(ids)
+
+        if not data.get('exceededTransferLimit'):
+            break
+
+        offset += len(ids)
+        print(f"Object ID transfer limit reached; fetching next page at offset {offset}...")
+
+    return all_ids
+
+
 def extract_layer(
     url: str,
     where: str = '1=1',
@@ -94,8 +162,9 @@ def extract_layer(
 
     has_geometry = metadata.get('geometryType') is not None
     max_record_count = metadata.get('maxRecordCount', 1000)
+    oid_field = metadata.get('objectIdField') or 'OBJECTID'
 
-    # 1. Get Object IDs
+    # 1. Get Object IDs (paged when the server hits its transfer limit)
     params = {
         'f': 'json',
         'where': where,
@@ -113,18 +182,7 @@ def extract_layer(
         params['inSR'] = '4326'
         params['spatialRel'] = spatial_rel
 
-    try:
-        r = make_request(f"{url}/query", params=params)
-        data = r.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to get object IDs from {url}. Error: {e}")
-        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
-
-    if 'error' in data:
-        print(f"Could not get Object IDs for {url}. Server response: {data['error']}")
-        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
-
-    object_ids = data.get('objectIds')
+    object_ids = _fetch_all_object_ids(url, params, oid_field=oid_field)
 
     if not object_ids:
         return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
