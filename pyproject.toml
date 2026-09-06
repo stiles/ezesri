@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ezesri"
+version = "0.4.0"
+description = "A lightweight Python package for extracting data from Esri REST API endpoints."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Matt Stiles", email = "mattstiles@gmail.com" }]
+keywords = ["esri", "gis", "geospatial", "arcgis", "rest-api"]
+requires-python = ">=3.9"
+dependencies = [
+    "requests",
+    "geopandas",
+    "pandas",
+    "click",
+    "tqdm",
+    "fiona",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+[project.urls]
+Homepage = "https://ezesri.com"
+Documentation = "https://ezesri.com/docs"
+Repository = "https://github.com/stiles/ezesri"
+Changelog = "https://github.com/stiles/ezesri/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+docs = ["mkdocs", "mkdocs-material"]
+test = ["pytest", "pytest-mock"]
+
+[project.scripts]
+ezesri = "ezesri.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["ezesri*"]

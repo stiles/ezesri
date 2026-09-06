@@ -1,8 +1,19 @@
 import geopandas as gpd
 import pandas as pd
+import json
 import os
-from typing import Union
-from .utils import make_request, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types, write_ndjson, set_rate_limit
+from typing import Optional, Union
+from .utils import (
+    make_request,
+    has_filegdb_write_support,
+    drop_empty_geometries,
+    unique_geometry_types,
+    write_ndjson,
+    set_rate_limit,
+    geojson_to_esri_geometry,
+    decode_dataframe,
+    build_codebook,
+)
 import requests
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -65,12 +76,111 @@ def summarize_metadata(metadata: dict) -> str:
             
     return "\n".join(summary)
 
+def get_codebook(url: str) -> dict:
+    """
+    Builds a codebook of every coded-value domain and date field on a layer.
+
+    Write this alongside an export so the original codes stay recoverable.
+
+    Args:
+        url: The URL of the feature layer or table.
+
+    Returns:
+        A JSON-serializable codebook, or an empty dict if metadata is unavailable.
+    """
+    metadata = get_metadata(url)
+    if not metadata:
+        return {}
+    return build_codebook(metadata)
+
+
+def _build_spatial_filter(
+    bbox: tuple = None,
+    geometry=None,
+    spatial_rel: str = 'esriSpatialRelIntersects',
+) -> dict:
+    """
+    Builds the Esri query parameters for a spatial filter.
+
+    Args:
+        bbox: A bounding box (xmin, ymin, xmax, ymax) in WGS84.
+        geometry: A GeoJSON geometry, Feature, FeatureCollection or JSON string.
+        spatial_rel: The spatial relationship to apply.
+
+    Returns:
+        A dict of query parameters, empty when no spatial filter is requested.
+    """
+    if bbox is not None:
+        return {
+            'geometry': f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}",
+            'geometryType': 'esriGeometryEnvelope',
+            'inSR': '4326',  # bbox input is documented as WGS84
+            'spatialRel': spatial_rel,
+        }
+
+    if geometry:
+        esri_geometry, geometry_type = geojson_to_esri_geometry(geometry)
+        return {
+            'geometry': esri_geometry,
+            'geometryType': geometry_type,
+            'inSR': '4326',
+            'spatialRel': spatial_rel,
+        }
+
+    return {}
+
+
+def get_count(
+    url: str,
+    where: str = '1=1',
+    bbox: tuple = None,
+    geometry=None,
+    spatial_rel: str = 'esriSpatialRelIntersects',
+) -> Optional[int]:
+    """
+    Asks the server how many features match a query, without downloading them.
+
+    Args:
+        url: The URL of the feature layer or table.
+        where: An optional SQL-like where clause to filter features.
+        bbox: An optional bounding box (xmin, ymin, xmax, ymax) in WGS84.
+        geometry: An optional GeoJSON geometry to filter by.
+        spatial_rel: The spatial relationship to use for filtering.
+
+    Returns:
+        The feature count, or None if the server does not report one.
+    """
+    params = {
+        'f': 'json',
+        'where': where or '1=1',
+        'returnCountOnly': 'true',
+    }
+    params.update(_build_spatial_filter(bbox, geometry, spatial_rel))
+
+    try:
+        r = make_request(f"{url}/query", params=params)
+        data = r.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Could not get a feature count from {url}. Error: {e}")
+        return None
+
+    if 'error' in data:
+        print(f"Could not get a feature count for {url}. Server response: {data['error']}")
+        return None
+
+    count = data.get('count')
+    return int(count) if count is not None else None
+
+
 def extract_layer(
     url: str,
     where: str = '1=1',
     bbox: tuple = None,
-    geometry: str = None,
+    geometry=None,
     spatial_rel: str = 'esriSpatialRelIntersects',
+    out_sr: int = 4326,
+    decode_domains: bool = True,
+    parse_dates: bool = True,
 ) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
     """
     Extracts a feature layer or table into a GeoDataFrame or DataFrame.
@@ -82,12 +192,20 @@ def extract_layer(
         url: The URL of the feature layer or table.
         where: An optional SQL-like where clause to filter features.
         bbox: An optional tuple defining a bounding box (xmin, ymin, xmax, ymax) to filter by.
-        geometry: An optional GeoJSON string or dictionary representing a geometry to filter by.
+        geometry: An optional GeoJSON geometry, Feature, FeatureCollection or JSON
+            string to filter by.
         spatial_rel: The spatial relationship to use for filtering. Defaults to 'esriSpatialRelIntersects'.
+        out_sr: The WKID of the output spatial reference. Defaults to 4326 (WGS84).
+        decode_domains: Replace Esri coded values with their labels. Defaults to True.
+        parse_dates: Convert Esri date fields to timestamps. Defaults to True.
 
     Returns:
         A GeoDataFrame or DataFrame containing the features from the layer.
     """
+    # A None where clause would be dropped by requests, sending a query with no
+    # filter at all, which some servers reject.
+    where = where or '1=1'
+
     metadata = get_metadata(url)
     if not metadata:
         return gpd.GeoDataFrame()
@@ -95,44 +213,69 @@ def extract_layer(
     has_geometry = metadata.get('geometryType') is not None
     max_record_count = metadata.get('maxRecordCount', 1000)
 
-    # 1. Get Object IDs
+    empty = gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
+
+    try:
+        spatial_filter = _build_spatial_filter(
+            bbox if has_geometry else None,
+            geometry if has_geometry else None,
+            spatial_rel,
+        )
+    except ValueError as e:
+        print(f"Invalid geometry filter: {e}")
+        return empty
+
+    # 1. Ask the server for the expected count so truncation can be detected
+    expected_count = get_count(
+        url,
+        where=where,
+        bbox=bbox if has_geometry else None,
+        geometry=geometry if has_geometry else None,
+        spatial_rel=spatial_rel,
+    )
+
+    # 2. Get Object IDs
     params = {
         'f': 'json',
         'where': where,
         'returnIdsOnly': 'true'
     }
-
-    if bbox is not None and has_geometry:
-        params['geometry'] = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-        params['geometryType'] = 'esriGeometryEnvelope'
-        params['inSR'] = '4326'  # Assume WGS84 for bbox input
-        params['spatialRel'] = 'esriSpatialRelIntersects'
-    elif geometry and has_geometry:
-        params['geometry'] = geometry
-        params['geometryType'] = 'esriGeometryPolygon'  # Assumes polygon, could be expanded
-        params['inSR'] = '4326'
-        params['spatialRel'] = spatial_rel
+    params.update(spatial_filter)
 
     try:
         r = make_request(f"{url}/query", params=params)
         data = r.json()
     except requests.exceptions.RequestException as e:
         print(f"Failed to get object IDs from {url}. Error: {e}")
-        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
+        return empty
 
     if 'error' in data:
         print(f"Could not get Object IDs for {url}. Server response: {data['error']}")
-        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
+        return empty
 
     object_ids = data.get('objectIds')
 
     if not object_ids:
-        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
+        return empty
 
-    # 2. Fetch features in batches
+    # Some servers cap returnIdsOnly, which would silently truncate the download
+    if data.get('exceededTransferLimit'):
+        print(
+            f"Warning: {url} reported exceededTransferLimit while listing object IDs. "
+            f"Only {len(object_ids):,} IDs were returned and the export will be incomplete. "
+            "Narrow the query with --where or --bbox."
+        )
+    elif expected_count is not None and len(object_ids) < expected_count:
+        print(
+            f"Warning: the server reports {expected_count:,} matching features but returned only "
+            f"{len(object_ids):,} object IDs. The export will be incomplete. "
+            "Narrow the query with --where or --bbox."
+        )
+
+    # 3. Fetch features in batches
     all_features = []
     query_format = 'geojson' if has_geometry else 'json'
-    
+
     for i in tqdm(range(0, len(object_ids), max_record_count), desc="Downloading features"):
         batch = object_ids[i:i + max_record_count]
         params = {
@@ -143,7 +286,7 @@ def extract_layer(
         }
         if has_geometry:
             params['returnGeometry'] = 'true'
-            params['outSR'] = '4326'
+            params['outSR'] = str(out_sr)
 
         try:
             r = make_request(f"{url}/query", method='post', data=params)
@@ -159,17 +302,56 @@ def extract_layer(
         features = features_json.get('features', [])
         all_features.extend(features)
 
-    # 3. Create DataFrame or GeoDataFrame
+    # 4. Verify the download against what the server said it had
+    if expected_count is not None and len(all_features) != expected_count:
+        print(
+            f"Warning: expected {expected_count:,} features from {url} but downloaded "
+            f"{len(all_features):,}. Some batches may have failed."
+        )
+
+    # 5. Create DataFrame or GeoDataFrame
     if not all_features:
-        return gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
-        
+        return empty
+
     if has_geometry:
-        return gpd.GeoDataFrame.from_features(all_features, crs="EPSG:4326")
+        df = gpd.GeoDataFrame.from_features(all_features, crs=f"EPSG:{out_sr}")
     else:
         rows = [f['attributes'] for f in all_features]
-        return pd.DataFrame(rows)
+        df = pd.DataFrame(rows)
 
-def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson', workers: int = 1, rate: float = 0.0):
+    # 6. Replace coded values with labels and turn epoch dates into timestamps
+    if decode_domains or parse_dates:
+        df, report = decode_dataframe(
+            df, metadata, decode_domains=decode_domains, parse_dates=parse_dates
+        )
+        if report['decoded_fields']:
+            print(f"Decoded coded values in: {', '.join(report['decoded_fields'])}")
+        if report['date_fields']:
+            print(f"Parsed dates in: {', '.join(report['date_fields'])}")
+        for field, codes in report['unmapped_codes'].items():
+            preview = ', '.join(str(c) for c in codes[:5])
+            suffix = f" (and {len(codes) - 5} more)" if len(codes) > 5 else ""
+            print(
+                f"Note: {field} had codes with no matching label, left as-is: {preview}{suffix}"
+            )
+
+    return df
+
+def bulk_export(
+    service_url: str,
+    output_dir: str,
+    output_format: str = 'geojson',
+    workers: int = 1,
+    rate: float = 0.0,
+    where: str = '1=1',
+    bbox: tuple = None,
+    geometry=None,
+    spatial_rel: str = 'esriSpatialRelIntersects',
+    out_sr: int = 4326,
+    decode_domains: bool = True,
+    parse_dates: bool = True,
+    write_codebook: bool = False,
+):
     """
     Discovers and exports all layers from a MapServer or FeatureServer.
 
@@ -179,6 +361,14 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
         output_format: The format to save the files in ('geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson').
         workers: Number of parallel workers to use.
         rate: Global max requests per second across all workers (0 to disable).
+        where: An optional SQL-like where clause applied to every layer.
+        bbox: An optional bounding box (xmin, ymin, xmax, ymax) in WGS84.
+        geometry: An optional GeoJSON geometry to filter by.
+        spatial_rel: The spatial relationship to use for filtering.
+        out_sr: The WKID of the output spatial reference.
+        decode_domains: Replace Esri coded values with their labels. Defaults to True.
+        parse_dates: Convert Esri date fields to timestamps. Defaults to True.
+        write_codebook: Write a <layer>.codebook.json next to each layer's output.
     """
     if rate and rate > 0:
         set_rate_limit(rate)
@@ -224,10 +414,26 @@ def bulk_export(service_url: str, output_dir: str, output_format: str = 'geojson
 
         print(f"--- Processing layer: {layer_name} (ID: {layer_id}) ---")
         try:
-            df = extract_layer(layer_url)
+            df = extract_layer(
+                layer_url,
+                where=where,
+                bbox=bbox,
+                geometry=geometry,
+                spatial_rel=spatial_rel,
+                out_sr=out_sr,
+                decode_domains=decode_domains,
+                parse_dates=parse_dates,
+            )
             if df.empty:
                 print(f"Layer is empty or could not be extracted. Skipping.")
                 return False
+
+            if write_codebook:
+                codebook = get_codebook(layer_url)
+                if codebook:
+                    codebook_path = os.path.join(output_dir, f"{layer_name}.codebook.json")
+                    with open(codebook_path, 'w', encoding='utf-8') as f:
+                        json.dump(codebook, f, indent=2, default=str)
 
             is_spatial = isinstance(df, gpd.GeoDataFrame)
 

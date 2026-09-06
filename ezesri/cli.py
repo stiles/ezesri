@@ -1,12 +1,70 @@
 import click
 import json
-from . import get_metadata, extract_layer, bulk_export, summarize_metadata
+from . import (
+    get_metadata,
+    get_count,
+    get_codebook,
+    extract_layer,
+    bulk_export,
+    summarize_metadata,
+)
 import geopandas as gpd
 import warnings
-from .utils import truncate_field_names, has_filegdb_write_support, drop_empty_geometries, unique_geometry_types, write_ndjson
+from .utils import (
+    truncate_field_names,
+    has_filegdb_write_support,
+    drop_empty_geometries,
+    unique_geometry_types,
+    write_ndjson,
+    geojson_to_esri_geometry,
+)
 import os
 
+
+def _parse_bbox(bbox):
+    """Parses a 'xmin,ymin,xmax,ymax' string into a tuple of floats."""
+    if not bbox:
+        return None
+    try:
+        bbox_tuple = tuple(map(float, bbox.split(',')))
+    except ValueError:
+        raise click.UsageError("Bbox must be in 'xmin,ymin,xmax,ymax' format.")
+    if len(bbox_tuple) != 4:
+        raise click.UsageError("Bbox must be in 'xmin,ymin,xmax,ymax' format.")
+    return bbox_tuple
+
+
+def _parse_geometry(geometry):
+    """
+    Loads a GeoJSON geometry from a file path or a raw string.
+
+    Validates that it converts to Esri JSON so the user gets an immediate error
+    rather than a failure mid-download.
+    """
+    if not geometry:
+        return None
+
+    try:
+        if os.path.exists(geometry):
+            with open(geometry, 'r') as f:
+                geometry_filter = json.load(f)
+        else:
+            geometry_filter = json.loads(geometry)
+    except (json.JSONDecodeError, IOError) as e:
+        raise click.UsageError(
+            f"Invalid geometry input. Must be a valid GeoJSON file or string. Error: {e}"
+        )
+
+    try:
+        geojson_to_esri_geometry(geometry_filter)
+    except ValueError as e:
+        raise click.UsageError(f"Invalid geometry input: {e}")
+
+    return geometry_filter
+
+
 @click.group()
+@click.version_option(package_name='ezesri')
 def cli():
     """A command-line interface for extracting data from Esri REST endpoints."""
     pass
@@ -38,13 +96,20 @@ def metadata(url, as_json):
 @click.argument('url')
 @click.option('--out', '-o', '--output', help="Output file path (e.g., 'data.geojson').")
 @click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson'], case_sensitive=False), help="Output format.")
-@click.option('--where', '-w', help="SQL WHERE clause for filtering (e.g., \"State = 'CA'\").")
-@click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format.")
+@click.option('--where', '-w', default='1=1', help="SQL WHERE clause for filtering (e.g., \"State = 'CA'\").")
+@click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format (WGS84).")
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
-@click.option('--spatial-rel', '--srs', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
-def fetch(url, out, format, where, bbox, geometry, spatial_rel):
+@click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
+@click.option('--out-sr', default=4326, type=int, help="WKID of the output spatial reference. Defaults to 4326 (WGS84).")
+@click.option('--raw-codes', is_flag=True, help="Keep Esri coded values instead of decoding them to their labels.")
+@click.option('--raw-dates', is_flag=True, help="Keep Esri date fields as raw epoch milliseconds.")
+@click.option('--codebook', help="Write a JSON codebook of coded values and date fields to this path.")
+def fetch(url, out, format, where, bbox, geometry, spatial_rel, out_sr, raw_codes, raw_dates, codebook):
     """
     Extracts a layer and saves it to a file or prints it to the console.
+
+    Coded values are decoded to their labels and date fields are converted to
+    timestamps by default. Use --raw-codes and --raw-dates to opt out.
     """
     normalized_url = url.strip().rstrip('/')
     if normalized_url.lower().endswith(('/mapserver', '/featureserver')):
@@ -61,30 +126,29 @@ def fetch(url, out, format, where, bbox, geometry, spatial_rel):
     if bbox and geometry:
         raise click.UsageError("Cannot use both --bbox and --geometry at the same time.")
 
-    bbox_tuple = None
-    if bbox:
-        try:
-            bbox_tuple = tuple(map(float, bbox.split(',')))
-            if len(bbox_tuple) != 4:
-                raise ValueError
-        except ValueError:
-            raise click.UsageError("Bbox must be in 'xmin,ymin,xmax,ymax' format.")
-
-    geometry_filter = None
-    if geometry:
-        try:
-            # Check if it's a file path
-            if os.path.exists(geometry):
-                with open(geometry, 'r') as f:
-                    geometry_filter = json.load(f)
-            else:
-                # Assume it's a GeoJSON string
-                geometry_filter = json.loads(geometry)
-        except (json.JSONDecodeError, IOError) as e:
-            raise click.UsageError(f"Invalid geometry input. Must be a valid GeoJSON file or string. Error: {e}")
+    bbox_tuple = _parse_bbox(bbox)
+    geometry_filter = _parse_geometry(geometry)
 
     click.echo(f"Fetching layer from {url}...")
-    gdf = extract_layer(url, where=where, bbox=bbox_tuple, geometry=geometry_filter, spatial_rel=spatial_rel)
+    gdf = extract_layer(
+        url,
+        where=where,
+        bbox=bbox_tuple,
+        geometry=geometry_filter,
+        spatial_rel=spatial_rel,
+        out_sr=out_sr,
+        decode_domains=not raw_codes,
+        parse_dates=not raw_dates,
+    )
+
+    if codebook:
+        book = get_codebook(url)
+        if book:
+            with open(codebook, 'w', encoding='utf-8') as f:
+                json.dump(book, f, indent=2, default=str)
+            click.echo(f"Wrote codebook to {codebook}")
+        else:
+            click.echo("Could not build a codebook for this layer.", err=True)
 
     if gdf.empty:
         click.echo("Could not extract layer or layer is empty.", err=True)
@@ -176,24 +240,100 @@ def fetch(url, out, format, where, bbox, geometry, spatial_rel):
         # Default behavior: print to console
         click.echo(gdf.to_string())
 
+@cli.command()
+@click.argument('url')
+@click.option('--where', '-w', default='1=1', help="SQL WHERE clause for filtering (e.g., \"State = 'CA'\").")
+@click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format (WGS84).")
+@click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
+@click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
+def count(url, where, bbox, geometry, spatial_rel):
+    """
+    Reports how many features match a query, without downloading them.
+    """
+    bbox_tuple = _parse_bbox(bbox)
+    geometry_filter = _parse_geometry(geometry)
+
+    result = get_count(
+        url,
+        where=where,
+        bbox=bbox_tuple,
+        geometry=geometry_filter,
+        spatial_rel=spatial_rel,
+    )
+
+    if result is None:
+        click.echo("Could not get a feature count for this layer.", err=True)
+        raise SystemExit(1)
+
+    click.echo(f"{result:,} features match this query.")
+
+
 @cli.command('bulk-fetch')
 @click.argument('url')
 @click.argument('output-dir')
 @click.option('--format', '-f', '--fmt', type=click.Choice(['geojson', 'shapefile', 'csv', 'gdb', 'gpkg', 'geoparquet', 'parquet', 'ndjson'], case_sensitive=False), default='geojson', help="Output format for all layers.")
 @click.option('--workers', '-w', type=int, default=1, help="Number of parallel workers to export layers.")
 @click.option('--rate', type=float, default=0.0, help="Global max requests per second (0 to disable).")
-def bulk_fetch(url, output_dir, format, workers, rate):
+@click.option('--where', default='1=1', help="SQL WHERE clause applied to every layer.")
+@click.option('--bbox', help="Bounding box filter in 'xmin,ymin,xmax,ymax' format (WGS84).")
+@click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
+@click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
+@click.option('--out-sr', default=4326, type=int, help="WKID of the output spatial reference. Defaults to 4326 (WGS84).")
+@click.option('--raw-codes', is_flag=True, help="Keep Esri coded values instead of decoding them to their labels.")
+@click.option('--raw-dates', is_flag=True, help="Keep Esri date fields as raw epoch milliseconds.")
+@click.option('--codebooks', is_flag=True, help="Write a <layer>.codebook.json next to each layer's output.")
+def bulk_fetch(url, output_dir, format, workers, rate, where, bbox, geometry, spatial_rel, out_sr, raw_codes, raw_dates, codebooks):
     """
     Fetches all layers from a service and saves them to a directory.
+
+    Coded values are decoded to their labels and date fields are converted to
+    timestamps by default. Use --raw-codes and --raw-dates to opt out.
     """
+    bbox_tuple = _parse_bbox(bbox)
+    geometry_filter = _parse_geometry(geometry)
+
     click.echo(f"Starting bulk export from {url} to {output_dir}...")
     if workers > 1:
         click.echo(f"Using {workers} workers...")
     if rate and rate > 0:
         click.echo(f"Applying global rate limit: {rate} req/s")
-    if workers == 1 and (not rate or rate == 0.0):
-        # Preserve backward-compatible call signature to satisfy existing tests
-        bulk_export(url, output_dir, output_format=format)
+
+    bulk_export(
+        url,
+        output_dir,
+        output_format=format,
+        workers=workers,
+        rate=rate,
+        where=where,
+        bbox=bbox_tuple,
+        geometry=geometry_filter,
+        spatial_rel=spatial_rel,
+        out_sr=out_sr,
+        decode_domains=not raw_codes,
+        parse_dates=not raw_dates,
+        write_codebook=codebooks,
+    )
+    click.echo("Bulk export complete.")
+
+
+@cli.command()
+@click.argument('url')
+@click.option('--out', '-o', help="Write the codebook to this path instead of stdout.")
+def codebook(url, out):
+    """
+    Prints a codebook of a layer's coded values and date fields.
+    """
+    book = get_codebook(url)
+
+    if not book:
+        click.echo("Could not build a codebook for this layer.", err=True)
+        raise SystemExit(1)
+
+    text = json.dumps(book, indent=2, default=str)
+
+    if out:
+        with open(out, 'w', encoding='utf-8') as f:
+            f.write(text)
+        click.echo(f"Wrote codebook to {out}")
     else:
-        bulk_export(url, output_dir, output_format=format, workers=workers, rate=rate)
-    click.echo("Bulk export complete.") 
+        click.echo(text)

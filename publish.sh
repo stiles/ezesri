@@ -10,11 +10,11 @@ echo "Starting the ezesri publishing process..."
 echo "========================================"
 
 # --- 1. Version Check ---
-# Extract version from setup.py to use in confirmation and URLs.
-VERSION=$(grep "version=" setup.py | sed 's/.*version=//' | sed "s/[',]//g" | xargs)
+# Extract version from pyproject.toml to use in confirmation and URLs.
+VERSION=$(grep -m1 '^version *=' pyproject.toml | sed 's/.*= *//' | tr -d '"' | xargs)
 
 if [ -z "$VERSION" ]; then
-    echo "Error: Could not find version in setup.py"
+    echo "Error: Could not find version in pyproject.toml"
     exit 1
 fi
 
