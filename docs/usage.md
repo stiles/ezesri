@@ -121,6 +121,23 @@ supports:
 ezesri fetch <URL> --out-sr 3857 --format geojson --out output.geojson
 ```
 
+### Large or fragile layers
+
+Object ID queries page past the ArcGIS 1,000,000-ID transfer limit automatically,
+so layers larger than 1M features extract in full. Feature batches default to the
+lesser of the server's advertised `maxRecordCount` and 1,000, and halve on failure
+before retrying — servers often advertise a `maxRecordCount` they cannot actually
+serialize with geometry attached. Override it if you need to:
+
+```bash
+ezesri fetch <URL> --batch-size 250 --format geojson --out output.geojson
+ezesri bulk-fetch <SERVICE_URL> <OUT_DIR> --format gpkg --batch-size 250
+```
+
+When a layer or a batch cannot be fetched, `extract_layer` raises `EsriLayerError`
+rather than returning a partial frame. Check the size first with `ezesri count` if
+you want to know what you are in for.
+
 ### Coded values and dates
 
 Esri layers routinely store a status as `3`, with a domain elsewhere in the

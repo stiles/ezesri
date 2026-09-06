@@ -7,6 +7,8 @@ from .extract import (
     extract_layer,
     bulk_export,
     summarize_metadata,
+    EsriLayerError,
+    DEFAULT_MAX_BATCH_SIZE,
 )
 from .utils import decode_dataframe, build_codebook
 
@@ -26,4 +28,6 @@ __all__ = [
     "summarize_metadata",
     "decode_dataframe",
     "build_codebook",
+    "EsriLayerError",
+    "DEFAULT_MAX_BATCH_SIZE",
 ]

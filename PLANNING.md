@@ -122,10 +122,15 @@ ezesri aims to be:
 These undercut trust in every downstream feature, so they landed before any new
 capability.
 
-- **Silent truncation**: `extract_layer` never compares what it received against
-  the server's own count, and never checks `exceededTransferLimit`. A server that
-  caps `returnIdsOnly` hands back a short file with no warning. Query
-  `returnCountOnly` first, verify, and fail loudly on a mismatch.
+- **Silent truncation**: solved independently in 0.3.4 and 0.3.5, and better than
+  the detection this section originally proposed. `_fetch_all_object_ids` pages
+  past `exceededTransferLimit` with `resultOffset`, so the full ID list is
+  retrieved rather than merely flagged as short, and `_fetch_features_adaptive`
+  raises rather than continuing past a failed batch. A pre-flight count check on
+  every extraction would now only add a round-trip, so `get_count()` and
+  `ezesri count` remain as an explicit, user-invoked pre-flight instead. One
+  residual gap: a server that truncates *without* setting `exceededTransferLimit`
+  is still undetected, and `ezesri count` is the manual check for that.
 - **`--where` passed as `None`**: the CLI always forwards `where=where`, which
   overrides the `'1=1'` default when the flag is omitted. `requests` drops `None`
   params, so the query goes out with no where clause at all and some servers
@@ -158,9 +163,9 @@ capability.
     `outFields='*'` is hardcoded, and it is the dominant cost on wide layers — a
     county parcel layer carries 120 fields when you want six. `--limit` also
     supplies the recon step the tool currently lacks.
-3.  **`ezesri count` and `--dry-run`**: Report the real feature count and an
-    estimated output size before committing to a download. Pairs with the
-    truncation fix in 5a.
+3.  **`ezesri count` and `--dry-run` (Partial, 0.4.0)**: `get_count()` and
+    `ezesri count` report the real feature count before committing to a download.
+    Still open: `--dry-run` on `fetch`, and an estimated output size.
 4.  **Change detection for scheduled pipelines**: `ezesri check <url>` plus an
     `--if-changed` flag backed by a manifest (`editingInfo.lastEditDate`, feature
     count, content hash). Lets a cron job skip the download when nothing moved and

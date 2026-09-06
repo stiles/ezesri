@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-09-06
 
 ### Fixed
-- **Silent truncation**: `extract_layer` now asks the server for a feature count before downloading, checks `exceededTransferLimit` on the object ID query, and warns when the download comes up short. Previously a server that capped `returnIdsOnly` produced an incomplete file with no indication anything was wrong.
 - **`--where` sent as `None`**: omitting `--where` passed `None` through to the query, which `requests` drops, so the request went out with no where clause at all and some servers rejected it. The CLI and library now default to `1=1`.
 - **`--geometry` did not work**: the CLI parsed GeoJSON into a dict and passed it straight into the query parameters. Esri expects Esri JSON (`rings`, `paths`) as a string, and `geometryType` was hardcoded to polygon. GeoJSON is now converted to Esri JSON, with the geometry type inferred and ring winding corrected. Points, multipoints, linestrings, multilinestrings, polygons, multipolygons, Features and FeatureCollections are all accepted.
 - **`spatial_rel` ignored for bounding boxes**: the bbox branch hardcoded `esriSpatialRelIntersects`.
@@ -31,6 +30,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected the package author metadata, which named the wrong person.
 - Raised `requires-python` from `>=3.6` to `>=3.9`, matching what the dependencies actually support.
 - Added `ezesri.__version__` and `ezesri --version`, both read from the installed package metadata so they cannot drift from `pyproject.toml`.
+- `outSR` is threaded through the adaptive batch fetcher added in 0.3.5, so `--out-sr` applies to every request rather than being overridden back to 4326.
+
+## [0.3.5] - 2026-07-22
+
+### Fixed
+- Raise `EsriLayerError` when layer metadata returns an Esri error JSON instead of a silent empty DataFrame (#3).
+- Cap feature batch size at 1000 by default, shrink and retry on failed batches, and raise when a batch cannot be fetched (#4).
+- Add optional `batch_size` argument to `extract_layer` and `--batch-size` to the CLI.
+
+## [0.3.4] - 2026-07-22
+
+### Fixed
+- Page past the ArcGIS 1,000,000 Object ID transfer limit so layers larger than 1M features are fully extracted.
 
 ## [0.3.3] - 2026-03-07
 

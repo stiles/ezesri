@@ -7,6 +7,7 @@ from . import (
     extract_layer,
     bulk_export,
     summarize_metadata,
+    EsriLayerError,
 )
 import geopandas as gpd
 import warnings
@@ -86,6 +87,16 @@ def metadata(url, as_json):
         click.echo("Could not fetch metadata.", err=True)
         return
 
+    if 'error' in data:
+        err = data['error'] or {}
+        click.echo(
+            f"Esri metadata error: code={err.get('code')} message={err.get('message')}",
+            err=True,
+        )
+        if as_json:
+            click.echo(json.dumps(data, indent=2))
+        raise SystemExit(1)
+
     if as_json:
         click.echo(json.dumps(data, indent=2))
     else:
@@ -101,10 +112,11 @@ def metadata(url, as_json):
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
 @click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
 @click.option('--out-sr', default=4326, type=int, help="WKID of the output spatial reference. Defaults to 4326 (WGS84).")
+@click.option('--batch-size', type=int, default=None, help="Features per request (default: min of server maxRecordCount and 1000).")
 @click.option('--raw-codes', is_flag=True, help="Keep Esri coded values instead of decoding them to their labels.")
 @click.option('--raw-dates', is_flag=True, help="Keep Esri date fields as raw epoch milliseconds.")
 @click.option('--codebook', help="Write a JSON codebook of coded values and date fields to this path.")
-def fetch(url, out, format, where, bbox, geometry, spatial_rel, out_sr, raw_codes, raw_dates, codebook):
+def fetch(url, out, format, where, bbox, geometry, spatial_rel, out_sr, batch_size, raw_codes, raw_dates, codebook):
     """
     Extracts a layer and saves it to a file or prints it to the console.
 
@@ -130,16 +142,20 @@ def fetch(url, out, format, where, bbox, geometry, spatial_rel, out_sr, raw_code
     geometry_filter = _parse_geometry(geometry)
 
     click.echo(f"Fetching layer from {url}...")
-    gdf = extract_layer(
-        url,
-        where=where,
-        bbox=bbox_tuple,
-        geometry=geometry_filter,
-        spatial_rel=spatial_rel,
-        out_sr=out_sr,
-        decode_domains=not raw_codes,
-        parse_dates=not raw_dates,
-    )
+    try:
+        gdf = extract_layer(
+            url,
+            where=where,
+            bbox=bbox_tuple,
+            geometry=geometry_filter,
+            spatial_rel=spatial_rel,
+            out_sr=out_sr,
+            batch_size=batch_size,
+            decode_domains=not raw_codes,
+            parse_dates=not raw_dates,
+        )
+    except EsriLayerError as e:
+        raise click.ClickException(str(e))
 
     if codebook:
         book = get_codebook(url)
@@ -279,10 +295,11 @@ def count(url, where, bbox, geometry, spatial_rel):
 @click.option('--geometry', help="Path to a GeoJSON file or a raw GeoJSON string for spatial filtering.")
 @click.option('--spatial-rel', default='esriSpatialRelIntersects', type=click.Choice(['esriSpatialRelIntersects', 'esriSpatialRelContains', 'esriSpatialRelWithin']), help="Spatial relationship for filtering.")
 @click.option('--out-sr', default=4326, type=int, help="WKID of the output spatial reference. Defaults to 4326 (WGS84).")
+@click.option('--batch-size', type=int, default=None, help="Features per request (default: min of server maxRecordCount and 1000).")
 @click.option('--raw-codes', is_flag=True, help="Keep Esri coded values instead of decoding them to their labels.")
 @click.option('--raw-dates', is_flag=True, help="Keep Esri date fields as raw epoch milliseconds.")
 @click.option('--codebooks', is_flag=True, help="Write a <layer>.codebook.json next to each layer's output.")
-def bulk_fetch(url, output_dir, format, workers, rate, where, bbox, geometry, spatial_rel, out_sr, raw_codes, raw_dates, codebooks):
+def bulk_fetch(url, output_dir, format, workers, rate, where, bbox, geometry, spatial_rel, out_sr, batch_size, raw_codes, raw_dates, codebooks):
     """
     Fetches all layers from a service and saves them to a directory.
 
@@ -312,6 +329,7 @@ def bulk_fetch(url, output_dir, format, workers, rate, where, bbox, geometry, sp
         decode_domains=not raw_codes,
         parse_dates=not raw_dates,
         write_codebook=codebooks,
+        batch_size=batch_size,
     )
     click.echo("Bulk export complete.")
 

@@ -19,6 +19,39 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
+# Cap per-request feature batches. Servers often advertise a high
+# maxRecordCount they cannot actually serialize with full geometry.
+DEFAULT_MAX_BATCH_SIZE = 1000
+
+
+class EsriLayerError(Exception):
+    """Raised when an Esri layer metadata or query response contains an error."""
+
+    def __init__(self, message: str, code=None, details=None):
+        self.code = code
+        self.details = details
+        super().__init__(message)
+
+
+def _raise_for_esri_error(payload: dict, context: str):
+    """Raise EsriLayerError when a response body includes Esri's error object."""
+    if not isinstance(payload, dict) or 'error' not in payload:
+        return
+    err = payload['error'] or {}
+    if isinstance(err, dict):
+        code = err.get('code')
+        message = err.get('message') or err.get('description') or str(err)
+        details = err.get('details')
+    else:
+        code = None
+        message = str(err)
+        details = None
+    raise EsriLayerError(
+        f"{context}: code={code} message={message}",
+        code=code,
+        details=details,
+    )
+
 
 def get_metadata(url: str) -> dict:
     """Fetches layer metadata from an Esri REST API endpoint.
@@ -172,6 +205,141 @@ def get_count(
     return int(count) if count is not None else None
 
 
+def _fetch_all_object_ids(url: str, query_params: dict, oid_field: str = 'OBJECTID') -> list:
+    """Fetch all matching object IDs, paging past ArcGIS transfer limits.
+
+    Hosted Feature Services often cap a single ``returnIdsOnly`` response at
+    1,000,000 IDs and set ``exceededTransferLimit``. Subsequent pages use
+    ``resultOffset`` with a stable ``orderByFields`` so IDs are not skipped or
+    duplicated.
+    """
+    all_ids = []
+    offset = 0
+
+    while True:
+        params = dict(query_params)
+        params.update({
+            'f': 'json',
+            'returnIdsOnly': 'true',
+            'orderByFields': f'{oid_field} ASC',
+        })
+        if offset:
+            params['resultOffset'] = offset
+
+        try:
+            r = make_request(f"{url}/query", params=params)
+            data = r.json()
+        except (requests.exceptions.RequestException, ValueError) as e:
+            raise EsriLayerError(f"Failed to get object IDs from {url}: {e}") from e
+
+        if 'error' in data:
+            # Some older services reject orderByFields / resultOffset on
+            # returnIdsOnly. Retry once without them when still on page one.
+            if offset == 0 and all_ids == []:
+                try:
+                    r = make_request(f"{url}/query", params=query_params)
+                    data = r.json()
+                except (requests.exceptions.RequestException, ValueError) as e:
+                    raise EsriLayerError(f"Failed to get object IDs from {url}: {e}") from e
+                if 'error' in data:
+                    _raise_for_esri_error(data, f"Could not get Object IDs for {url}")
+                ids = data.get('objectIds') or []
+                if data.get('exceededTransferLimit'):
+                    print(
+                        f"Warning: Object ID query for {url} hit the server transfer "
+                        f"limit ({len(ids)} IDs). This service does not support paging "
+                        "ID queries, so some features may be missing."
+                    )
+                return ids
+
+            _raise_for_esri_error(data, f"Could not get Object IDs for {url}")
+
+        ids = data.get('objectIds') or []
+        if not ids:
+            break
+
+        all_ids.extend(ids)
+
+        if not data.get('exceededTransferLimit'):
+            break
+
+        offset += len(ids)
+        print(f"Object ID transfer limit reached; fetching next page at offset {offset}...")
+
+    return all_ids
+
+
+def _query_features_batch(
+    url: str,
+    object_ids: list,
+    where: str,
+    has_geometry: bool,
+    query_format: str,
+    out_sr: int = 4326,
+) -> list:
+    """Fetch one batch of features by object ID. Raises EsriLayerError on failure."""
+    params = {
+        'f': query_format,
+        'where': where,
+        'objectIds': ','.join(map(str, object_ids)),
+        'outFields': '*',
+    }
+    if has_geometry:
+        params['returnGeometry'] = 'true'
+        params['outSR'] = str(out_sr)
+
+    try:
+        r = make_request(f"{url}/query", method='post', data=params)
+        features_json = r.json()
+    except (requests.exceptions.RequestException, ValueError) as e:
+        raise EsriLayerError(f"Failed to fetch a batch from {url}: {e}") from e
+
+    _raise_for_esri_error(features_json, f"Error fetching batch from {url}")
+    return features_json.get('features', [])
+
+
+def _fetch_features_adaptive(
+    url: str,
+    object_ids: list,
+    where: str,
+    has_geometry: bool,
+    query_format: str,
+    batch_size: int,
+    out_sr: int = 4326,
+) -> list:
+    """Download features in batches, halving batch size when a request fails."""
+    all_features = []
+    batch_size = max(1, batch_size)
+    i = 0
+
+    with tqdm(total=len(object_ids), desc="Downloading features") as pbar:
+        while i < len(object_ids):
+            size = min(batch_size, len(object_ids) - i)
+            batch = object_ids[i:i + size]
+            try:
+                features = _query_features_batch(
+                    url, batch, where, has_geometry, query_format, out_sr=out_sr
+                )
+            except EsriLayerError as e:
+                if size <= 1:
+                    raise EsriLayerError(
+                        f"Failed to fetch features from {url} even with batch size 1: {e}"
+                    ) from e
+                new_size = max(1, size // 2)
+                print(
+                    f"Batch of {size} failed ({e}); "
+                    f"retrying with batch size {new_size}..."
+                )
+                batch_size = new_size
+                continue
+
+            all_features.extend(features)
+            i += size
+            pbar.update(size)
+
+    return all_features
+
+
 def extract_layer(
     url: str,
     where: str = '1=1',
@@ -181,6 +349,7 @@ def extract_layer(
     out_sr: int = 4326,
     decode_domains: bool = True,
     parse_dates: bool = True,
+    batch_size: Optional[int] = None,
 ) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
     """
     Extracts a feature layer or table into a GeoDataFrame or DataFrame.
@@ -198,9 +367,15 @@ def extract_layer(
         out_sr: The WKID of the output spatial reference. Defaults to 4326 (WGS84).
         decode_domains: Replace Esri coded values with their labels. Defaults to True.
         parse_dates: Convert Esri date fields to timestamps. Defaults to True.
+        batch_size: Optional per-request feature count. Defaults to the lesser of the
+            layer's maxRecordCount and 1000. On failure the batch is halved and retried.
 
     Returns:
         A GeoDataFrame or DataFrame containing the features from the layer.
+
+    Raises:
+        EsriLayerError: If the layer metadata or a feature query returns an Esri error,
+            or if feature batches keep failing after shrinking to size 1.
     """
     # A None where clause would be dropped by requests, sending a query with no
     # filter at all, which some servers reject.
@@ -210,8 +385,15 @@ def extract_layer(
     if not metadata:
         return gpd.GeoDataFrame()
 
+    _raise_for_esri_error(metadata, f"Esri layer metadata request failed for {url}")
+
     has_geometry = metadata.get('geometryType') is not None
-    max_record_count = metadata.get('maxRecordCount', 1000)
+    advertised_max = metadata.get('maxRecordCount') or DEFAULT_MAX_BATCH_SIZE
+    if batch_size is not None:
+        max_record_count = max(1, batch_size)
+    else:
+        max_record_count = max(1, min(int(advertised_max), DEFAULT_MAX_BATCH_SIZE))
+    oid_field = metadata.get('objectIdField') or 'OBJECTID'
 
     empty = gpd.GeoDataFrame() if has_geometry else pd.DataFrame()
 
@@ -222,19 +404,9 @@ def extract_layer(
             spatial_rel,
         )
     except ValueError as e:
-        print(f"Invalid geometry filter: {e}")
-        return empty
+        raise EsriLayerError(f"Invalid geometry filter for {url}: {e}") from e
 
-    # 1. Ask the server for the expected count so truncation can be detected
-    expected_count = get_count(
-        url,
-        where=where,
-        bbox=bbox if has_geometry else None,
-        geometry=geometry if has_geometry else None,
-        spatial_rel=spatial_rel,
-    )
-
-    # 2. Get Object IDs
+    # 1. Get Object IDs (paged when the server hits its transfer limit)
     params = {
         'f': 'json',
         'where': where,
@@ -242,74 +414,24 @@ def extract_layer(
     }
     params.update(spatial_filter)
 
-    try:
-        r = make_request(f"{url}/query", params=params)
-        data = r.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to get object IDs from {url}. Error: {e}")
-        return empty
-
-    if 'error' in data:
-        print(f"Could not get Object IDs for {url}. Server response: {data['error']}")
-        return empty
-
-    object_ids = data.get('objectIds')
+    object_ids = _fetch_all_object_ids(url, params, oid_field=oid_field)
 
     if not object_ids:
         return empty
 
-    # Some servers cap returnIdsOnly, which would silently truncate the download
-    if data.get('exceededTransferLimit'):
-        print(
-            f"Warning: {url} reported exceededTransferLimit while listing object IDs. "
-            f"Only {len(object_ids):,} IDs were returned and the export will be incomplete. "
-            "Narrow the query with --where or --bbox."
-        )
-    elif expected_count is not None and len(object_ids) < expected_count:
-        print(
-            f"Warning: the server reports {expected_count:,} matching features but returned only "
-            f"{len(object_ids):,} object IDs. The export will be incomplete. "
-            "Narrow the query with --where or --bbox."
-        )
-
-    # 3. Fetch features in batches
-    all_features = []
+    # 2. Fetch features in adaptive batches
     query_format = 'geojson' if has_geometry else 'json'
+    all_features = _fetch_features_adaptive(
+        url,
+        object_ids,
+        where=where,
+        has_geometry=has_geometry,
+        query_format=query_format,
+        batch_size=max_record_count,
+        out_sr=out_sr,
+    )
 
-    for i in tqdm(range(0, len(object_ids), max_record_count), desc="Downloading features"):
-        batch = object_ids[i:i + max_record_count]
-        params = {
-            'f': query_format,
-            'where': where,
-            'objectIds': ','.join(map(str, batch)),
-            'outFields': '*',
-        }
-        if has_geometry:
-            params['returnGeometry'] = 'true'
-            params['outSR'] = str(out_sr)
-
-        try:
-            r = make_request(f"{url}/query", method='post', data=params)
-            features_json = r.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch a batch from {url}. Error: {e}")
-            continue
-
-        if 'error' in features_json:
-            print(f"Error fetching batch from {url}: {features_json['error']}")
-            continue
-
-        features = features_json.get('features', [])
-        all_features.extend(features)
-
-    # 4. Verify the download against what the server said it had
-    if expected_count is not None and len(all_features) != expected_count:
-        print(
-            f"Warning: expected {expected_count:,} features from {url} but downloaded "
-            f"{len(all_features):,}. Some batches may have failed."
-        )
-
-    # 5. Create DataFrame or GeoDataFrame
+    # 3. Create DataFrame or GeoDataFrame
     if not all_features:
         return empty
 
@@ -319,7 +441,7 @@ def extract_layer(
         rows = [f['attributes'] for f in all_features]
         df = pd.DataFrame(rows)
 
-    # 6. Replace coded values with labels and turn epoch dates into timestamps
+    # 4. Replace coded values with labels and turn epoch dates into timestamps
     if decode_domains or parse_dates:
         df, report = decode_dataframe(
             df, metadata, decode_domains=decode_domains, parse_dates=parse_dates
@@ -351,6 +473,7 @@ def bulk_export(
     decode_domains: bool = True,
     parse_dates: bool = True,
     write_codebook: bool = False,
+    batch_size: Optional[int] = None,
 ):
     """
     Discovers and exports all layers from a MapServer or FeatureServer.
@@ -369,6 +492,7 @@ def bulk_export(
         decode_domains: Replace Esri coded values with their labels. Defaults to True.
         parse_dates: Convert Esri date fields to timestamps. Defaults to True.
         write_codebook: Write a <layer>.codebook.json next to each layer's output.
+        batch_size: Optional per-request feature count, passed to each layer's extract.
     """
     if rate and rate > 0:
         set_rate_limit(rate)
@@ -423,6 +547,7 @@ def bulk_export(
                 out_sr=out_sr,
                 decode_domains=decode_domains,
                 parse_dates=parse_dates,
+                batch_size=batch_size,
             )
             if df.empty:
                 print(f"Layer is empty or could not be extracted. Skipping.")

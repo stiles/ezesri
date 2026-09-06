@@ -164,6 +164,18 @@ Output is WGS84 (EPSG:4326) by default. Use `--out-sr` with any WKID the server 
 ezesri fetch <URL> --out-sr 3857 --format geojson --out output.geojson
 ```
 
+#### Large or fragile layers
+
+Object ID queries page past the ArcGIS 1,000,000-ID transfer limit automatically,
+so layers larger than 1M features extract in full. Feature batches default to the
+lesser of the server's advertised `maxRecordCount` and 1,000, and halve on failure
+before retrying — servers often advertise a `maxRecordCount` they cannot actually
+serialize with geometry attached. Override it if you need to:
+
+```bash
+ezesri fetch <URL> --batch-size 250 --format geojson --out output.geojson
+```
+
 #### Coded values and dates
 
 Esri layers routinely store a status as `3`, with a domain elsewhere in the
