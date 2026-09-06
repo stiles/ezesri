@@ -44,8 +44,8 @@ Here's a simple example of how to use `ezesri` as a library to extract data and 
 ```python
 import ezesri
 
-# URL for Riverside County, CA parcels layer
-url = "https://gis.countyofriverside.us/arcgis/rest/services/mmc/mmc_mSrvc_v12_prod/MapServer/8"
+# URL for a public sample layer: Esri USA Census States
+url = "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Census_States/MapServer/0"
 
 # Get layer metadata
 metadata = ezesri.get_metadata(url)
@@ -54,7 +54,7 @@ print(ezesri.summarize_metadata(metadata))
 
 # Extract layer to a GeoDataFrame
 print("\n## Extracting Layer to GeoDataFrame")
-gdf = ezesri.extract_layer(url, where="APN LIKE '750%'")
+gdf = ezesri.extract_layer(url, where="1=1")
 print(f"Successfully extracted {len(gdf)} features.")
 print(gdf.head())
 ```
@@ -88,7 +88,7 @@ dict or a JSON string, and is converted to Esri JSON before the query is sent.
 
 Get a clean, human-readable summary of a layer's metadata.
 ```bash
-ezesri metadata "https://gis.countyofriverside.us/arcgis/rest/services/mmc/mmc_mSrvc_v12_prod/MapServer/8"
+ezesri metadata "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Census_States/MapServer/0"
 ```
 
 To get the raw JSON output, use the `--json` flag:
