@@ -1,5 +1,13 @@
+import json
+
 import pytest
-from ezesri import get_metadata, extract_layer, EsriLayerError, DEFAULT_MAX_BATCH_SIZE
+from ezesri import (
+    get_metadata,
+    get_count,
+    extract_layer,
+    EsriLayerError,
+    DEFAULT_MAX_BATCH_SIZE,
+)
 import requests
 
 # URL for a known public Esri feature layer
@@ -69,12 +77,111 @@ def test_extract_layer_with_bbox(mocker):
 
     bbox = (-1, -1, 1, 1)
     gdf = extract_layer(URL, bbox=bbox)
-    
+
     assert not gdf.empty
     assert len(gdf) == 1
     # Check that the bbox was passed to the query
     assert 'geometry' in mock_make_request.call_args_list[0].kwargs['params']
     assert mock_make_request.call_args_list[0].kwargs['params']['geometry'] == '-1,-1,1,1'
+
+
+def test_bbox_uses_requested_spatial_rel(mocker):
+    """The bbox branch honours spatial_rel instead of hardcoding intersects."""
+    mocker.patch(
+        'ezesri.extract.get_metadata',
+        return_value={'geometryType': 'esriGeometryPolygon', 'maxRecordCount': 1000}
+    )
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {'objectIds': []}
+
+    extract_layer(URL, bbox=(-1, -1, 1, 1), spatial_rel='esriSpatialRelWithin')
+
+    params = mock_make_request.call_args_list[0].kwargs['params']
+    assert params['spatialRel'] == 'esriSpatialRelWithin'
+
+
+def test_geometry_filter_is_converted_to_esri_json(mocker):
+    """A GeoJSON geometry is converted to an Esri JSON string, not passed raw."""
+    mocker.patch(
+        'ezesri.extract.get_metadata',
+        return_value={'geometryType': 'esriGeometryPolygon', 'maxRecordCount': 1000}
+    )
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {'objectIds': []}
+
+    geometry = {"type": "Polygon", "coordinates": [[[0, 0], [0, 1], [1, 1], [0, 0]]]}
+    extract_layer(URL, geometry=geometry)
+
+    params = mock_make_request.call_args_list[0].kwargs['params']
+    assert isinstance(params['geometry'], str)
+    assert 'rings' in json.loads(params['geometry'])
+    assert params['geometryType'] == 'esriGeometryPolygon'
+
+
+def test_geometry_type_is_inferred(mocker):
+    """geometryType follows the input rather than defaulting to polygon."""
+    mocker.patch(
+        'ezesri.extract.get_metadata',
+        return_value={'geometryType': 'esriGeometryPoint', 'maxRecordCount': 1000}
+    )
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {'objectIds': []}
+
+    extract_layer(URL, geometry={"type": "LineString", "coordinates": [[0, 0], [1, 1]]})
+
+    params = mock_make_request.call_args_list[0].kwargs['params']
+    assert params['geometryType'] == 'esriGeometryPolyline'
+
+
+def test_none_where_becomes_1_equals_1(mocker):
+    """A None where clause would be dropped by requests, so it is normalised."""
+    mocker.patch(
+        'ezesri.extract.get_metadata',
+        return_value={'geometryType': 'esriGeometryPolygon', 'maxRecordCount': 1000}
+    )
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {'objectIds': []}
+
+    extract_layer(URL, where=None)
+
+    assert mock_make_request.call_args_list[0].kwargs['params']['where'] == '1=1'
+
+
+def test_out_sr_is_applied(mocker):
+    """out_sr sets both the query outSR and the resulting CRS."""
+    mocker.patch(
+        'ezesri.extract.get_metadata',
+        return_value={'geometryType': 'esriGeometryPoint', 'maxRecordCount': 1000}
+    )
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {
+        'objectIds': [1],
+        'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [0, 0]}, 'properties': {'id': 1}}]
+    }
+
+    gdf = extract_layer(URL, out_sr=3857)
+
+    assert gdf.crs.to_epsg() == 3857
+    # The batch fetch posts its params as form data
+    batch_call = mock_make_request.call_args_list[-1]
+    assert batch_call.kwargs['data']['outSR'] == '3857'
+
+
+def test_get_count_returns_server_count(mocker):
+    """get_count reads the server's count without downloading features."""
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {'count': 4321}
+
+    assert get_count(URL) == 4321
+    assert mock_make_request.call_args.kwargs['params']['returnCountOnly'] == 'true'
+
+
+def test_get_count_handles_error(mocker):
+    """A server error yields None rather than raising."""
+    mock_make_request = mocker.patch('ezesri.extract.make_request')
+    mock_make_request.return_value.json.return_value = {'error': {'message': 'nope'}}
+
+    assert get_count(URL) is None
 
 
 def test_extract_layer_pages_object_ids_past_transfer_limit(mocker):
