@@ -45,7 +45,7 @@ Here's a simple example of how to use `ezesri` as a library to extract data and 
 import ezesri
 
 # URL for Riverside County, CA parcels layer
-url = "https://gis.countyofriverside.us/arcgis/rest/services/mmc/mmc_mSrvc_v12_prod/MapServer/8"
+url = "https://gis.countyofriverside.us/arcgis/rest/services/mmc/mmc_mSrvc/MapServer/8"
 
 # Get layer metadata
 metadata = ezesri.get_metadata(url)
